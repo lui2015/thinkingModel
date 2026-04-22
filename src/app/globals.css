@@ -1,6 +1,59 @@
 @import "tailwindcss";
 
+/* ============================================
+   Tailwind v4 @theme: 注册固定的 token 名称
+   映射到运行时 CSS 变量，实现动态主题切换
+   ============================================ */
 @theme inline {
+  --color-primary: #FF2E97;
+  --color-primary-light: #FF6EB4;
+  --color-primary-dark: #D4007A;
+  --color-secondary: #00F5D4;
+  --color-secondary-light: #72FFEA;
+  --color-accent: #FEE440;
+  --color-accent-dark: #F5B800;
+  --color-surface: #0A0A1A;
+  --color-surface-alt: #161630;
+  --color-surface-solid: #0F0F23;
+  --color-text: #F0F0FF;
+  --color-text-secondary: #B8B8D0;
+  --color-text-light: #7E7E9A;
+  --color-border: #33335A;
+  --color-card: #16162E;
+  --color-header-bg: rgba(10,10,26,0.9);
+  --font-sans: "Inter", "Noto Sans SC", system-ui, -apple-system, sans-serif;
+}
+
+/* ============================
+   THEME: Default (智慧紫)
+   ============================ */
+:root,
+[data-theme="cyberpunk"] {
+  --color-primary: #FF2E97;
+  --color-primary-light: #FF6EB4;
+  --color-primary-dark: #D4007A;
+  --color-secondary: #00F5D4;
+  --color-secondary-light: #72FFEA;
+  --color-accent: #FEE440;
+  --color-accent-dark: #F5B800;
+  --color-surface: #0A0A1A;
+  --color-surface-alt: #161630;
+  --color-surface-solid: #0F0F23;
+  --color-text: #F0F0FF;
+  --color-text-secondary: #B8B8D0;
+  --color-text-light: #7E7E9A;
+  --color-border: #33335A;
+  --color-card: #16162E;
+  --color-header-bg: rgba(10,10,26,0.9);
+  --hero-from: rgba(255,46,151,0.12);
+  --hero-via: #0A0A1A;
+  --hero-to: rgba(0,245,212,0.1);
+}
+
+/* ============================
+   THEME: Classic (智慧紫)
+   ============================ */
+[data-theme="default"] {
   --color-primary: #6C5CE7;
   --color-primary-light: #A29BFE;
   --color-primary-dark: #5A4BD1;
@@ -10,42 +63,146 @@
   --color-accent-dark: #F39C12;
   --color-surface: #FAFAFA;
   --color-surface-alt: #F0F0F5;
+  --color-surface-solid: #FFFFFF;
   --color-text: #2D3436;
   --color-text-secondary: #636E72;
   --color-text-light: #B2BEC3;
   --color-border: #E0E0E8;
   --color-card: #FFFFFF;
-  --font-sans: "Inter", "Noto Sans SC", system-ui, -apple-system, sans-serif;
+  --color-header-bg: rgba(255,255,255,0.8);
+  --hero-from: rgba(108,92,231,0.05);
+  --hero-via: #FFFFFF;
+  --hero-to: rgba(0,184,148,0.05);
 }
 
+/* ============================
+   THEME: Dark (暗夜模式)
+   ============================ */
+[data-theme="dark"] {
+  --color-primary: #818CF8;
+  --color-primary-light: #A5B4FC;
+  --color-primary-dark: #6366F1;
+  --color-secondary: #34D399;
+  --color-secondary-light: #6EE7B7;
+  --color-accent: #FBBF24;
+  --color-accent-dark: #F59E0B;
+  --color-surface: #111827;
+  --color-surface-alt: #1F2937;
+  --color-surface-solid: #111827;
+  --color-text: #F3F4F6;
+  --color-text-secondary: #B0B8C4;
+  --color-text-light: #7B8494;
+  --color-border: #3D4A5C;
+  --color-card: #1F2937;
+  --color-header-bg: rgba(17,24,39,0.9);
+  --hero-from: rgba(129,140,248,0.08);
+  --hero-via: #111827;
+  --hero-to: rgba(52,211,153,0.06);
+}
+
+/* ============================
+   THEME: Nature (自然森林)
+   ============================ */
+[data-theme="nature"] {
+  --color-primary: #2D6A4F;
+  --color-primary-light: #52B788;
+  --color-primary-dark: #1B4332;
+  --color-secondary: #D4A373;
+  --color-secondary-light: #E9C899;
+  --color-accent: #DDA15E;
+  --color-accent-dark: #BC6C25;
+  --color-surface: #F5F1EB;
+  --color-surface-alt: #ECE5DA;
+  --color-surface-solid: #FAF8F5;
+  --color-text: #2B2D26;
+  --color-text-secondary: #606B56;
+  --color-text-light: #A3AA98;
+  --color-border: #D5CEBC;
+  --color-card: #FAF8F5;
+  --color-header-bg: rgba(250,248,245,0.85);
+  --hero-from: rgba(45,106,79,0.06);
+  --hero-via: #F5F1EB;
+  --hero-to: rgba(212,163,115,0.06);
+}
+
+/* ============================
+   THEME: Ocean (深海蓝)
+   ============================ */
+[data-theme="ocean"] {
+  --color-primary: #0077B6;
+  --color-primary-light: #48CAE4;
+  --color-primary-dark: #005F8C;
+  --color-secondary: #F77F00;
+  --color-secondary-light: #FCBF49;
+  --color-accent: #FCBF49;
+  --color-accent-dark: #F77F00;
+  --color-surface: #F0F8FF;
+  --color-surface-alt: #E0F0FD;
+  --color-surface-solid: #FFFFFF;
+  --color-text: #023E58;
+  --color-text-secondary: #4A7C94;
+  --color-text-light: #90C0D8;
+  --color-border: #C3DEF0;
+  --color-card: #FFFFFF;
+  --color-header-bg: rgba(240,248,255,0.85);
+  --hero-from: rgba(0,119,182,0.06);
+  --hero-via: #F0F8FF;
+  --hero-to: rgba(247,127,0,0.05);
+}
+
+/* ============================
+   THEME: Sunset (日落暖阳)
+   ============================ */
+[data-theme="sunset"] {
+  --color-primary: #E63946;
+  --color-primary-light: #FF6B6B;
+  --color-primary-dark: #C42836;
+  --color-secondary: #457B9D;
+  --color-secondary-light: #7EB8D8;
+  --color-accent: #F4A261;
+  --color-accent-dark: #E76F51;
+  --color-surface: #FFF8F0;
+  --color-surface-alt: #FFEEDD;
+  --color-surface-solid: #FFFFFF;
+  --color-text: #3D2C2C;
+  --color-text-secondary: #7A6060;
+  --color-text-light: #BFA8A0;
+  --color-border: #F0D8C8;
+  --color-card: #FFFFFF;
+  --color-header-bg: rgba(255,248,240,0.85);
+  --hero-from: rgba(230,57,70,0.05);
+  --hero-via: #FFF8F0;
+  --hero-to: rgba(69,123,157,0.05);
+}
+
+/* ============================
+   Base styles
+   ============================ */
 body {
   background: var(--color-surface);
   color: var(--color-text);
   font-family: var(--font-sans);
+  transition: background-color 0.3s ease, color 0.3s ease;
 }
 
-/* Smooth scroll */
 html {
   scroll-behavior: smooth;
 }
 
-/* Custom scrollbar */
-::-webkit-scrollbar {
-  width: 6px;
-}
-::-webkit-scrollbar-track {
-  background: transparent;
-}
-::-webkit-scrollbar-thumb {
-  background: var(--color-text-light);
-  border-radius: 3px;
-}
-::-webkit-scrollbar-thumb:hover {
-  background: var(--color-text-secondary);
-}
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--color-text-light); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--color-text-secondary); }
 
-/* Selection */
 ::selection {
   background: var(--color-primary);
   color: white;
+}
+
+/* Cyberpunk special glow effects */
+[data-theme="cyberpunk"] .cyber-glow {
+  text-shadow: 0 0 10px var(--color-primary), 0 0 20px var(--color-primary), 0 0 40px rgba(255,46,151,0.3);
+}
+[data-theme="cyberpunk"] .cyber-border {
+  box-shadow: 0 0 8px rgba(255,46,151,0.2), inset 0 0 8px rgba(0,245,212,0.05);
 }

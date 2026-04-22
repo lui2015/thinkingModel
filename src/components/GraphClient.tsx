@@ -153,6 +153,13 @@ export default function GraphClient() {
       n.y = Math.max(30, Math.min(h - 30, n.y));
     });
 
+    // Read theme colors from CSS variables
+    const rootStyles = getComputedStyle(document.documentElement);
+    const textColor = rootStyles.getPropertyValue("--color-text").trim() || "#2D3436";
+    const textLightColor = rootStyles.getPropertyValue("--color-text-light").trim() || "#B2BEC3";
+    const primaryColor = rootStyles.getPropertyValue("--color-primary").trim() || "#6C5CE7";
+    const borderColor = rootStyles.getPropertyValue("--color-border").trim() || "#E0E0E8";
+
     // Draw
     ctx.save();
     ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
@@ -174,7 +181,7 @@ export default function GraphClient() {
       ctx.beginPath();
       ctx.moveTo(source.x, source.y);
       ctx.lineTo(target.x, target.y);
-      ctx.strokeStyle = bothMatch ? "rgba(108,92,231,0.15)" : "rgba(200,200,200,0.08)";
+      ctx.strokeStyle = bothMatch ? `${primaryColor}26` : `${borderColor}20`;
       ctx.lineWidth = bothMatch ? 1.5 : 0.5;
       ctx.stroke();
     });
@@ -193,9 +200,9 @@ export default function GraphClient() {
         ? n.color
         : isMatch
         ? `${n.color}22`
-        : `rgba(200,200,200,0.1)`;
+        : `${borderColor}18`;
       ctx.fill();
-      ctx.strokeStyle = isMatch ? `${n.color}${isHovered ? "ff" : "88"}` : "rgba(200,200,200,0.2)";
+      ctx.strokeStyle = isMatch ? `${n.color}${isHovered ? "ff" : "88"}` : `${borderColor}33`;
       ctx.lineWidth = isHovered ? 2.5 : 1.5;
       ctx.stroke();
 
@@ -211,7 +218,7 @@ export default function GraphClient() {
       if (isHovered || (isMatch && scale >= 0.8)) {
         ctx.font = `${isHovered ? "bold " : ""}11px system-ui, sans-serif`;
         ctx.textAlign = "center";
-        ctx.fillStyle = isMatch ? "#2D3436" : "rgba(100,100,100,0.3)";
+        ctx.fillStyle = isMatch ? textColor : `${textLightColor}4D`;
         ctx.fillText(n.title, n.x, n.y + radius + 14);
       }
     });
@@ -340,7 +347,7 @@ export default function GraphClient() {
         {/* Hover tooltip */}
         {hoveredNode && (
           <div
-            className="absolute pointer-events-none bg-white rounded-xl shadow-lg border border-border p-4 max-w-xs z-10"
+            className="absolute pointer-events-none bg-card rounded-xl shadow-lg border border-border p-4 max-w-xs z-10"
             style={{
               left: Math.min(mouseRef.current.x + 16, (containerRef.current?.clientWidth || 600) - 220),
               top: mouseRef.current.y + 16,

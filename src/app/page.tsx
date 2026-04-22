@@ -16,7 +16,7 @@ export default function HomePage() {
   return (
     <div className="min-h-screen">
       {/* Hero Section */}
-      <section className="relative overflow-hidden bg-gradient-to-br from-primary/5 via-white to-secondary/5">
+      <section className="relative overflow-hidden" style={{ background: "linear-gradient(to bottom right, var(--hero-from), var(--hero-via), var(--hero-to))" }}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-16 pb-20 sm:pt-24 sm:pb-28">
           <div className="text-center max-w-3xl mx-auto">
             <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold text-text tracking-tight">
@@ -34,20 +34,10 @@ export default function HomePage() {
             <div className="mt-10 max-w-xl mx-auto">
               <Link
                 href="/models"
-                className="flex items-center gap-3 bg-white border border-border rounded-2xl px-5 py-4 shadow-sm hover:shadow-md hover:border-primary/30 transition-all group"
+                className="flex items-center gap-3 bg-card border border-border rounded-2xl px-5 py-4 shadow-sm hover:shadow-md hover:border-primary/30 transition-all group"
               >
-                <svg
-                  className="w-5 h-5 text-text-light group-hover:text-primary transition-colors"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-                  />
+                <svg className="w-5 h-5 text-text-light group-hover:text-primary transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                 </svg>
                 <span className="text-text-light group-hover:text-text-secondary transition-colors">
                   搜索思维模型...
@@ -100,12 +90,7 @@ export default function HomePage() {
                   &ldquo;{daily.memorySentence}&rdquo;
                 </p>
               </div>
-              <svg
-                className="w-6 h-6 text-white/50 group-hover:text-white group-hover:translate-x-1 transition-all shrink-0 mt-1"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
+              <svg className="w-6 h-6 text-white/50 group-hover:text-white group-hover:translate-x-1 transition-all shrink-0 mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
               </svg>
             </div>
@@ -117,9 +102,7 @@ export default function HomePage() {
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-20">
         <div className="text-center mb-10">
           <h2 className="text-2xl sm:text-3xl font-bold text-text">探索分类</h2>
-          <p className="text-text-secondary mt-2">
-            10 大维度，覆盖决策、认知、系统、沟通等核心能力
-          </p>
+          <p className="text-text-secondary mt-2">10 大维度，覆盖决策、认知、系统、沟通等核心能力</p>
         </div>
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3 sm:gap-4">
           {categories.map((cat) => (
@@ -127,36 +110,25 @@ export default function HomePage() {
               key={cat.id}
               href={`/models?category=${cat.id}`}
               className="group flex flex-col items-center gap-2 p-4 sm:p-5 rounded-2xl border border-border bg-card hover:border-transparent hover:shadow-lg transition-all"
-              style={
-                {
-                  "--cat-color": cat.color,
-                } as React.CSSProperties
-              }
+              style={{ "--cat-color": cat.color } as React.CSSProperties}
             >
               <span className="text-3xl group-hover:scale-110 transition-transform">{cat.icon}</span>
-              <span className="text-sm font-semibold text-text group-hover:text-[var(--cat-color)] transition-colors">
-                {cat.name}
-              </span>
-              <span className="text-xs text-text-light hidden sm:block text-center">
-                {cat.description}
-              </span>
+              <span className="text-sm font-semibold text-text group-hover:text-[var(--cat-color)] transition-colors">{cat.name}</span>
+              <span className="text-xs text-text-light hidden sm:block text-center">{cat.description}</span>
             </Link>
           ))}
         </div>
       </section>
 
       {/* Featured Models */}
-      <section className="bg-white py-16 sm:py-20">
+      <section className="bg-surface-solid py-16 sm:py-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between mb-10">
             <div>
               <h2 className="text-2xl sm:text-3xl font-bold text-text">精选推荐</h2>
               <p className="text-text-secondary mt-1">最有价值的思维模型，优先掌握</p>
             </div>
-            <Link
-              href="/models"
-              className="text-sm font-medium text-primary hover:text-primary-dark transition-colors flex items-center gap-1"
-            >
+            <Link href="/models" className="text-sm font-medium text-primary hover:text-primary-dark transition-colors flex items-center gap-1">
               查看全部
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
@@ -178,10 +150,7 @@ export default function HomePage() {
             <h2 className="text-2xl sm:text-3xl font-bold text-text">最近更新</h2>
             <p className="text-text-secondary mt-1">持续收录优质思维模型</p>
           </div>
-          <Link
-            href="/models"
-            className="text-sm font-medium text-primary hover:text-primary-dark transition-colors flex items-center gap-1"
-          >
+          <Link href="/models" className="text-sm font-medium text-primary hover:text-primary-dark transition-colors flex items-center gap-1">
             查看全部
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
@@ -198,15 +167,11 @@ export default function HomePage() {
       {/* CTA */}
       <section className="bg-gradient-to-r from-primary to-primary-dark py-16 sm:py-20">
         <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h2 className="text-2xl sm:text-3xl font-bold text-white">
-            开始构建你的思维模型体系
-          </h2>
-          <p className="mt-4 text-white/70 text-lg">
-            查理·芒格说：你必须知道重要学科的重要理论，并经常使用它们。
-          </p>
+          <h2 className="text-2xl sm:text-3xl font-bold text-white">开始构建你的思维模型体系</h2>
+          <p className="mt-4 text-white/70 text-lg">查理·芒格说：你必须知道重要学科的重要理论，并经常使用它们。</p>
           <Link
             href="/models"
-            className="mt-8 inline-flex items-center gap-2 bg-white text-primary font-semibold px-8 py-3.5 rounded-xl hover:shadow-lg transition-all hover:-translate-y-0.5"
+            className="mt-8 inline-flex items-center gap-2 bg-surface-solid text-primary font-semibold px-8 py-3.5 rounded-xl hover:shadow-lg transition-all hover:-translate-y-0.5"
           >
             浏览所有模型
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
