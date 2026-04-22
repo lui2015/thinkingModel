@@ -615,6 +615,14 @@ export const models: MentalModel[] = [
   },
 ];
 
+// Import and merge extended models
+import { extendedModels } from "./models-extended-1";
+import { extendedModels2 } from "./models-extended-2";
+import { extendedModels3 } from "./models-extended-3";
+import { extendedModels4 } from "./models-extended-4";
+
+models.push(...extendedModels, ...extendedModels2, ...extendedModels3, ...extendedModels4);
+
 export function getModelBySlug(slug: string): MentalModel | undefined {
   return models.find((m) => m.slug === slug);
 }
