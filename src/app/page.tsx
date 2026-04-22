@@ -1,5 +1,6 @@
 import Link from "next/link";
 import ModelCard from "@/components/ModelCard";
+import DailyModelCard from "@/components/DailyModelCard";
 import {
   categories,
   models,
@@ -73,29 +74,7 @@ export default function HomePage() {
 
       {/* Daily Model */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 -mt-8 relative z-10">
-        <Link href={`/models/${daily.slug}`} className="block group">
-          <div className="bg-gradient-to-r from-primary to-primary-dark rounded-2xl p-6 sm:p-8 text-white shadow-lg shadow-primary/20 hover:shadow-xl hover:shadow-primary/30 transition-all">
-            <div className="flex items-center gap-2 text-white/70 text-sm mb-2">
-              <span>✨</span>
-              <span>每日一模型</span>
-            </div>
-            <div className="flex items-start gap-4">
-              <span className="text-4xl">{daily.icon}</span>
-              <div className="flex-1 min-w-0">
-                <h3 className="text-xl sm:text-2xl font-bold group-hover:underline decoration-white/40 underline-offset-4">
-                  {daily.title}
-                </h3>
-                <p className="text-white/80 mt-1">{daily.subtitle}</p>
-                <p className="text-white/60 text-sm mt-3 italic">
-                  &ldquo;{daily.memorySentence}&rdquo;
-                </p>
-              </div>
-              <svg className="w-6 h-6 text-white/50 group-hover:text-white group-hover:translate-x-1 transition-all shrink-0 mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-              </svg>
-            </div>
-          </div>
-        </Link>
+        <DailyModelCard initialModel={daily} models={models} />
       </section>
 
       {/* Category Navigation */}
