@@ -408,8 +408,8 @@ export default function KnowledgeCardExport({
       );
     } else {
       // 第 5 张：总结（金句 + 场景 / 避坑）
-      const scenarios = model.usage.scenarios;
-      const pitfalls = model.usage.pitfalls;
+      const scenarios = model.usage.scenarios.slice(0, 4);
+      const pitfalls = model.usage.pitfalls.slice(0, 3);
       const tip = model.usage.steps[0];
       body = (
         <div className="flex-1 flex flex-col">
@@ -442,19 +442,16 @@ export default function KnowledgeCardExport({
                   </li>
                 ))}
               </ul>
-              {tip && (
-                <div
-                  className="mt-2 pt-2 flex items-start gap-1.5"
-                  style={{ borderTop: "1px solid rgba(255,255,255,0.1)" }}
-                >
-                  <span className="text-[13px] leading-none shrink-0 mt-0.5">💡</span>
-                  <p className="text-white/78 text-[11.5px] leading-snug">
-                    <b className="text-white/90">实操建议：</b>
-                    {tip}
-                  </p>
-                </div>
-              )}
             </div>
+            {tip && (
+              <div
+                className="rounded-xl px-4 py-2.5"
+                style={{ background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.1)" }}
+              >
+                <p className="text-white/90 text-[12px] font-semibold mb-1.5">💡 实操建议</p>
+                <p className="text-white/80 text-[12.5px] leading-snug">{tip}</p>
+              </div>
+            )}
             <div
               className="rounded-xl px-4 py-2.5"
               style={{ background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.1)" }}
