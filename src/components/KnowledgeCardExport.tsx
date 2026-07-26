@@ -7,6 +7,7 @@ import {
   type MentalModel,
 } from "@/lib/models-data";
 import { getModelHook } from "@/lib/model-hooks";
+import { getModelStory } from "@/lib/model-stories";
 
 interface KnowledgeCardExportProps {
   model: MentalModel;
@@ -44,6 +45,7 @@ export default function KnowledgeCardExport({
   const cardRefs = useRef<(HTMLDivElement | null)[]>([]);
 
   const hook = getModelHook(model.slug, model.hook);
+  const story = getModelStory(model.slug, model.story);
   const accent = mixWithWhite(categoryColor, 0.22);
   const deep = mixWithBlack(categoryColor, 0.42);
   const gradient = `linear-gradient(155deg, ${deep} 0%, #0B0B1A 68%)`;
@@ -388,6 +390,17 @@ export default function KnowledgeCardExport({
                   {c}
                 </span>
               ))}
+            </div>
+          )}
+          {story && (
+            <div
+              className="mt-3 rounded-xl px-3.5 py-2.5 flex items-start gap-2"
+              style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)" }}
+            >
+              <span className="text-[15px] leading-none shrink-0 mt-0.5">📖</span>
+              <p className="text-white/80 text-[11.5px] leading-snug">
+                {story.length > 72 ? story.slice(0, 72) + "…" : story}
+              </p>
             </div>
           )}
           {footer}
