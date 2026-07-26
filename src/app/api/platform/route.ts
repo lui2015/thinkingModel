@@ -3,6 +3,26 @@ import { models as allModels, getModelBySlug, type MentalModel } from "@/lib/mod
 
 // 简易文件计数器（生产环境应换数据库）
 const STATS_FILE = "/tmp/platform-stats.json";
+const SUBMIT_FILE = "/tmp/platform-submissions.json";
+
+function readSubmissions(): any[] {
+  try {
+    const fs = require("fs");
+    if (!fs.existsSync(SUBMIT_FILE)) return [];
+    return JSON.parse(fs.readFileSync(SUBMIT_FILE, "utf-8"));
+  } catch {
+    return [];
+  }
+}
+
+function writeSubmissions(arr: any[]) {
+  try {
+    const fs = require("fs");
+    fs.writeFileSync(SUBMIT_FILE, JSON.stringify(arr, null, 2), "utf-8");
+  } catch {
+    // 静默失败
+  }
+}
 
 function readStats(): { total: number; today: number; date: string } {
   try {
@@ -45,6 +65,11 @@ export async function GET(request: NextRequest) {
   // 返回统计信息
   if (action === "stats") {
     return NextResponse.json(readStats());
+  }
+
+  // 查看已通过开放平台录入的模型
+  if (action === "submissions") {
+    return NextResponse.json({ models: readSubmissions(), count: readSubmissions().length });
   }
 
   // 查询单个模型
@@ -116,6 +141,32 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({
         models: list.map((m: MentalModel) => ({ slug: m.slug, title: m.title, icon: m.icon, keyInsight: m.keyInsight })),
         count: list.length,
+        stats,
+      });
+    }
+
+    if (action === "submit") {
+      // 录入模型及相关解读信息（开放平台核心能力）
+      const { model }: { model?: any } = body;
+      if (!model || typeof model !== "object") {
+        return NextResponse.json({ error: "缺少 model 对象" }, { status: 400 });
+      }
+      if (!model.slug || !model.title || !model.category) {
+        return NextResponse.json(
+          { error: "model 缺少必填字段（slug / title / category 为必填）" },
+          { status: 400 }
+        );
+      }
+      const arr = readSubmissions();
+      const idx = arr.findIndex((m) => m.slug === model.slug);
+      if (idx >= 0) arr[idx] = model; // 同 slug 覆盖更新
+      else arr.push(model);
+      writeSubmissions(arr);
+      const stats = bumpCount();
+      return NextResponse.json({
+        success: true,
+        message: idx >= 0 ? "模型已更新" : "模型已录入",
+        count: arr.length,
         stats,
       });
     }

@@ -1,149 +1,49 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { categories } from "@/lib/models-data";
 
-/* ---------- AI 提示词模板 ---------- */
-const PROMPTS = [
-  {
-    id: "deep-dive",
-    title: "深度解读模型",
-    icon: "🔬",
-    desc: "让 AI 深入讲解某个思维模型的核心原理与应用",
-    prompt: `你是一位思维模型专家。请为我深入解读「{model}」这个思维模型，包括：
-1. 核心定义与起源（谁提出、背景）
-2. 底层逻辑与运作机制（用通俗比喻）
-3. 3 个真实应用场景（生活/工作各举一例）
-4. 常见误区与避坑指南
-5. 与其他思维模型的搭配使用建议
-6. 一句话记忆口诀
+/* 核心 AI 提示词：让 AI 把模型信息整理成接口可直接提交的 JSON */
+const ENTRY_PROMPT = `你是一位思维模型知识整理专家。请把我要分享的模型，整理成严格符合 JSON 的结构化数据，方便我直接提交到「思维模型库」开放平台的录入接口。
 
-请用中文回答，语言生动有趣，适合分享给非专业读者。`,
+【模型原始信息 / 素材】：
+{raw}
+
+请只输出一个 JSON 对象（不要多余解释），字段如下：
+
+{
+  "slug": "英文小写短横线 id，如 first-principles（用作接口与页面唯一标识）",
+  "title": "模型中文名",
+  "subtitle": "一句话副标题（20 字内）",
+  "category": "分类 id，必须是以下之一：decision | cognition | system | communication | business | learning | probability | efficiency | innovation | game",
+  "icon": "emoji 图标，如 🧠",
+  "tags": ["标签1", "标签2", "标签3"],
+  "difficulty": 1,
+  "introduction": "通俗介绍（200 字以内）",
+  "keyInsight": "关键洞察（一句话）",
+  "memorySentence": "一句话记忆口诀",
+  "usage": {
+    "scenarios": ["适用场景1", "适用场景2"],
+    "steps": ["实操步骤1", "实操步骤2", "实操步骤3"],
+    "pitfalls": ["常见误区1", "常见误区2"],
+    "combineWith": ["可搭配的模型名1", "可搭配的模型名2"]
   },
-  {
-    id: "decision",
-    title: "决策辅助分析",
-    icon: "🎯",
-    desc: "用指定模型框架辅助分析一个具体决策问题",
-    prompt: `你是一位决策顾问。请运用「{model}」思维模型，帮我分析以下决策问题：
+  "cases": [
+    { "title": "案例标题", "content": "案例内容", "type": "life" }
+  ]
+}
 
-【我的问题】：{problem}
+整理完成后，用下面这条命令即可录入（把 <JSON> 换成你刚生成的完整 JSON）：
 
-请按以下结构输出：
-1. 问题拆解（用该模型的视角重新定义问题）
-2. 关键要素识别（列出影响决策的核心变量）
-3. 分析过程（逐步推导，展示思考链路）
-4. 方案建议（给出 2-3 个可行选项及利弊）
-5. 最终推荐（明确结论 + 理由）
-6. 风险提示（可能忽略的盲点）
-
-请用中文，输出清晰有条理。`,
-  },
-  {
-    id: "compare",
-    title: "多模型对比分析",
-    icon: "⚖️",
-    desc: "同时用多个思维模型从不同角度审视同一问题",
-    prompt: `你是一位跨学科思维专家。请分别用以下 {count} 个思维模型来分析同一个问题：
-
-【问题】：{problem}
-【使用的模型】：{models}
-
-对每个模型，请输出：
-- 模型名称 + 一句话核心观点
-- 该模型视角下的关键洞察
-- 该模型的独特发现（其他模型没覆盖到的）
-
-最后给出综合结论：多个模型交汇后的一致性发现是什么？矛盾点在哪里？最终建议？
-
-请用中文，表格对比更佳。`,
-  },
-  {
-    id: "learn-plan",
-    title: "学习路径规划",
-    icon: "📚",
-    desc: "制定系统的思维模型学习计划",
-    prompt: `你是一位认知科学教育家。我想系统学习思维模型，提升决策和认知能力。
-
-【我的背景】：{background}
-【学习目标】：{goal}
-【可用时间】：每天约 {time}
-
-请帮我：
-1. 推荐适合我阶段的 10 个入门思维模型（附学习顺序）
-2. 为每个模型设计一个"今日练习"（5 分钟可完成的小任务）
-3. 规划 4 周进阶路线图
-4. 推荐延伸阅读资源（书/文章/视频）
-
-请用中文，鼓励式语气。`,
-  },
-  {
-    id: "teach-others",
-    title: "教学/分享素材生成",
-    icon: "🎤",
-    desc: "生成可用于演讲、写作、社交媒体的思维模型内容",
-    prompt: `你是一位科普内容创作者。请围绕「{model}」这个思维模型，为我创作一套分享素材：
-
-1. **30 秒电梯演讲**（3 句话讲清楚）
-2. **开场钩子**（一个引人入胜的问题或故事）
-3. **核心类比**（用一个日常事物做比喻）
-4. **金句 3 条**（适合发朋友圈/微博）
-5. **互动练习**（给听众的一个小测试）
-6. **常见反驳**（别人可能会问的质疑 + 你的回应）
-7. **行动号召**（听完之后可以立即做的事）
-
-风格要求：{style}
-请用中文。`,
-  },
-];
-
-/* ---------- API 文档数据 ---------- */
-const API_DOCS = [
-  {
-    method: "GET",
-    endpoint: "/api/platform?slug=first-principles",
-    description: "查询单个模型的完整信息",
-    curl: 'curl -sS "https://www.luliming.xyz/thinkingModel/api/platform?slug=first-principles"',
-  },
-  {
-    method: "GET",
-    endpoint: "/api/platform?category=decision",
-    description: "按分类查询模型列表（精简字段）",
-    curl: 'curl -sS "https://www.luliming.xyz/thinkingModel/api/platform?category=decision"',
-  },
-  {
-    method: "GET",
-    endpoint: "/api/platform?action=stats",
-    description: "获取接口调用统计（今日 / 累计）",
-    curl: 'curl -sS "https://www.luliming.xyz/thinkingModel/api/platform?action=stats"',
-  },
-  {
-    method: "POST",
-    endpoint: "/api/platform",
-    body: '{"action":"query","slug":"first-principles"}',
-    description: "AI 调用：查询完整模型数据（含统计）",
-    curl: 'curl -sS -X POST "https://www.luliming.xyz/thinkingModel/api/platform" -H "Content-Type: application/json" -d \'{"action":"query","slug":"first-principles"}\'',
-  },
-  {
-    method: "POST",
-    endpoint: "/api/platform",
-    body: '{"action":"search","q":"决策"}',
-    description: "AI 调用：关键词搜索模型",
-    curl: 'curl -sS -X POST "https://www.luliming.xyz/thinkingModel/api/platform" -H "Content-Type: application/json" -d \'{"action":"search","q":"决策"}\'',
-  },
-];
-
-/* ---------- 分类 slug-name 映射 ---------- */
-const categoryMap = Object.fromEntries(categories.map((c) => [c.id, c.name]));
+curl -X POST "https://www.luliming.xyz/thinkingModel/api/platform" \\
+  -H "Content-Type: application/json" \\
+  -d '{"action":"submit","model":<JSON>}'`;
 
 export default function PlatformPage() {
-  const [activePrompt, setActivePrompt] = useState(PROMPTS[0].id);
-  const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
   const [stats, setStats] = useState<{ total: number; today: number } | null>(null);
-  const [testResult, setTestResult] = useState<string>("");
-  const [testLoading, setTestLoading] = useState(false);
+  const [submitResult, setSubmitResult] = useState("");
+  const [submitLoading, setSubmitLoading] = useState(false);
 
-  // 获取统计
   useEffect(() => {
     fetch("/api/platform?action=stats")
       .then((r) => r.json())
@@ -151,260 +51,270 @@ export default function PlatformPage() {
       .catch(() => {});
   }, []);
 
-  const copyToClipboard = useCallback(async (text: string, id: string) => {
+  const copy = useCallback(async (text: string) => {
     try {
       await navigator.clipboard.writeText(text);
-      setCopiedId(id);
-      setTimeout(() => setCopiedId(null), 2000);
     } catch {
-      // fallback
       const ta = document.createElement("textarea");
       ta.value = text;
       document.body.appendChild(ta);
       ta.select();
       document.execCommand("copy");
       document.body.removeChild(ta);
-      setCopiedId(id);
-      setTimeout(() => setCopiedId(null), 2000);
     }
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
   }, []);
 
-  const currentPrompt = PROMPTS.find((p) => p.id === activePrompt) ?? PROMPTS[0];
-
-  const handleTestApi = async () => {
-    setTestLoading(true);
-    setTestResult("");
+  const runDemoSubmit = async () => {
+    setSubmitLoading(true);
+    setSubmitResult("");
+    const demo = {
+      action: "submit",
+      model: {
+        slug: "demo-circle-of-competence",
+        title: "能力圈",
+        subtitle: "只在自己懂的领域做决策",
+        category: "decision",
+        icon: "🎯",
+        tags: ["能力边界", "自知"],
+        difficulty: 1,
+        introduction: "能力圈由巴菲特提出：只在与自己能力匹配的领域里做决策，圈外机会再好也不碰。",
+        keyInsight: "知道自己不知道什么，比知道什么更重要。",
+        memorySentence: "圈内下注，圈外旁观。",
+        usage: {
+          scenarios: ["投资选股", "职业选择"],
+          steps: ["列出你真正懂的领域", "圈出能力边界", "只在此范围内决策"],
+          pitfalls: ["盲目跨界自信"],
+          combineWith: ["第一性原理"],
+        },
+        cases: [{ title: "巴菲特不投科技股", content: "早年坚持不碰看不懂的科技股。", type: "business" }],
+      },
+    };
     try {
-      const res = await fetch("/api/platform?slug=first-principles");
-      const data = await res.json();
-      setTestResult(JSON.stringify(data, null, 2));
+      const res = await fetch("/api/platform", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(demo),
+      });
+      setSubmitResult(JSON.stringify(await res.json(), null, 2));
     } catch (e) {
-      setTestResult(`请求失败: ${e}`);
+      setSubmitResult(`请求失败: ${e}`);
     }
-    setTestLoading(false);
+    setSubmitLoading(false);
   };
 
   return (
     <div className="min-h-screen">
-      {/* ===== Hero ===== */}
+      {/* Hero */}
       <section className="relative overflow-hidden border-b border-border">
         <div className="absolute inset-0 bg-gradient-to-br from-primary/8 via-transparent to-secondary/6" />
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-20">
+        <div className="relative max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
           <div className="flex items-center gap-3 mb-4">
             <span className="text-4xl">🚀</span>
             <span className="px-3 py-1 rounded-full text-xs font-bold bg-primary/15 text-primary border border-primary/25">
               OPEN PLATFORM
             </span>
           </div>
-          <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black text-text mb-4 leading-tight">
-            开放平台
-          </h1>
-          <p className="text-lg text-text-secondary max-w-2xl leading-relaxed">
-            对外提供思维模型数据的 API 接口，支持 AI 调用、第三方集成。
-            <br />
-            内置 AI 提示词模板，一键复制即可让 ChatGPT / Claude / DeepSeek 等为你深度解读任意思维模型。
+          <h1 className="text-3xl sm:text-4xl font-black text-text mb-4">开放平台</h1>
+          <p className="text-lg text-text-secondary leading-relaxed">
+            对外提供思维模型数据的写入与查询接口。把你的模型与解读整理成结构化数据，
+            调用一次接口即可录入，供 AI 与外部系统直接调用。
           </p>
 
-          {/* 统计卡片 */}
-          <div className="flex items-center gap-4 mt-8 flex-wrap">
-            <div className="rounded-xl bg-card border border-border px-5 py-3.5 min-w-[140px]">
+          {/* 统计 */}
+          <div className="flex items-center gap-4 mt-8">
+            <div className="rounded-xl bg-card border border-border px-5 py-3.5 min-w-[130px]">
               <p className="text-xs text-text-light mb-1">今日调用</p>
               <p className="text-2xl font-black text-primary">{stats?.today ?? "—"}</p>
             </div>
-            <div className="rounded-xl bg-card border border-border px-5 py-3.5 min-w-[140px]">
+            <div className="rounded-xl bg-card border border-border px-5 py-3.5 min-w-[130px]">
               <p className="text-xs text-text-light mb-1">累计调用</p>
               <p className="text-2xl font-black text-secondary">{stats?.total ?? "—"}</p>
             </div>
-            <button
-              type="button"
-              onClick={handleTestApi}
-              disabled={testLoading}
-              className="rounded-xl bg-primary/10 hover:bg-primary/20 border border-primary/25 text-primary text-sm font-medium px-4 py-3 transition-colors disabled:opacity-50"
-            >
-              {testLoading ? "测试中…" : "🧪 测试接口"}
-            </button>
           </div>
-
-          {testResult && (
-            <pre className="mt-4 rounded-xl bg-surface-solid border border-border p-4 text-xs text-text-secondary overflow-auto max-h-48 max-w-2xl">
-              {testResult}
-            </pre>
-          )}
         </div>
       </section>
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 space-y-16">
-        {/* ===== AI 提示词模板 ===== */}
+      <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12 space-y-12">
+        {/* 核心提示词 */}
         <section>
-          <div className="flex items-center gap-2 mb-6">
+          <div className="flex items-center gap-2 mb-5">
             <span className="text-2xl">🤖</span>
-            <h2 className="text-2xl font-bold text-text">AI 提示词模板</h2>
-            <span className="text-sm text-text-light">一键复制，直接发给 AI 使用</span>
+            <h2 className="text-2xl font-bold text-text">让 AI 帮你整理录入信息</h2>
           </div>
-
-          <div className="grid grid-cols-1 lg:grid-cols-[320px_1fr] gap-6">
-            {/* 左侧：模板列表 */}
-            <div className="space-y-2">
-              {PROMPTS.map((p) => (
-                <button
-                  key={p.id}
-                  type="button"
-                  onClick={() => setActivePrompt(p.id)}
-                  className={`w-full text-left rounded-xl p-4 border transition-all ${
-                    activePrompt === p.id
-                      ? "border-primary bg-primary/8 shadow-sm"
-                      : "border-border bg-card hover:border-primary/40 hover:bg-surface-alt"
-                  }`}
-                >
-                  <div className="flex items-center gap-2.5 mb-1.5">
-                    <span className="text-xl">{p.icon}</span>
-                    <span className={`font-semibold text-sm ${activePrompt === p.id ? "text-primary" : "text-text"}`}>
-                      {p.title}
-                    </span>
-                  </div>
-                  <p className="text-xs text-text-light leading-relaxed">{p.desc}</p>
-                </button>
-              ))}
-            </div>
-
-            {/* 右侧：当前模板详情 */}
-            <div className="rounded-2xl border border-border bg-card overflow-hidden flex flex-col">
-              <div className="flex items-center justify-between px-5 py-3.5 border-b border-border bg-surface-alt/50">
-                <div className="flex items-center gap-2">
-                  <span className="text-lg">{currentPrompt.icon}</span>
-                  <span className="font-bold text-sm text-text">{currentPrompt.title}</span>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => copyToClipboard(currentPrompt.prompt, `prompt-${currentPrompt.id}`)}
-                  className="inline-flex items-center gap-1.5 rounded-lg bg-primary text-white text-xs font-medium px-3 py-1.5 hover:bg-primary-dark transition-colors"
-                >
-                  {copiedId === `prompt-${currentPrompt.id}` ? (
-                    <>✅ 已复制</>
-                  ) : (
-                    <>
-                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                      </svg>
-                      复制提示词
-                    </>
-                  )}
-                </button>
-              </div>
-              <div className="flex-1 p-5 overflow-auto">
-                <pre className="text-sm text-text-secondary whitespace-pre-wrap leading-relaxed font-mono">
-                  {currentPrompt.prompt}
-                </pre>
-              </div>
-              <div className="px-5 py-3 border-t border-border bg-surface-alt/30 text-xs text-text-light">
-                💡 将 <code className="px-1.5 py-0.5 rounded bg-surface-alt text-primary">{'{model}'}</code>{" "}
-                替换为具体模型名（如「第一性原理」「二八定律」），其他占位符同理。
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* ===== 可用分类 & 模型速查 ===== */}
-        <section>
-          <div className="flex items-center gap-2 mb-6">
-            <span className="text-2xl">📂</span>
-            <h2 className="text-2xl font-bold text-text">可用分类</h2>
-          </div>
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
-            {categories.map((cat) => (
-              <div
-                key={cat.id}
-                className="rounded-xl border border-border bg-card px-4 py-3 hover:border-primary/40 transition-colors"
+          <div className="rounded-2xl border border-border bg-card overflow-hidden">
+            <div className="flex items-center justify-between px-5 py-3.5 border-b border-border bg-surface-alt/50">
+              <span className="font-bold text-sm text-text">AI 提示词 · 一键复制给任意 AI 使用</span>
+              <button
+                type="button"
+                onClick={() => copy(ENTRY_PROMPT)}
+                className="inline-flex items-center gap-1.5 rounded-lg bg-primary text-white text-xs font-medium px-3 py-1.5 hover:bg-primary-dark transition-colors"
               >
-                <span className="text-lg">{cat.icon}</span>
-                <p className="font-semibold text-sm text-text mt-1">{cat.name}</p>
-                <p className="text-xs text-text-light font-mono">{cat.id}</p>
-              </div>
-            ))}
+                {copied ? "✅ 已复制" : "复制提示词"}
+              </button>
+            </div>
+            <pre className="p-5 text-sm text-text-secondary whitespace-pre-wrap leading-relaxed font-mono max-h-[420px] overflow-auto">
+              {ENTRY_PROMPT}
+            </pre>
           </div>
+          <p className="text-sm text-text-light mt-3">
+            💡 把 <code className="px-1.5 py-0.5 rounded bg-surface-alt text-primary">{'{raw}'}</code>{" "}
+            替换成你手头的模型素材（一段文字、笔记、文章都行），发给 ChatGPT / Claude / DeepSeek 等，
+            它会返回可直接提交的 JSON。
+          </p>
         </section>
 
-        {/* ===== API 文档 ===== */}
+        {/* 怎么调用接口录入 */}
         <section>
-          <div className="flex items-center gap-2 mb-6">
+          <div className="flex items-center gap-2 mb-5">
             <span className="text-2xl">📡</span>
-            <h2 className="text-2xl font-bold text-text">API 接口文档</h2>
+            <h2 className="text-2xl font-bold text-text">怎么调用接口录入模型</h2>
           </div>
 
-          <div className="space-y-4">
-            {API_DOCS.map((doc, idx) => (
-              <div key={idx} className="rounded-xl border border-border bg-card overflow-hidden">
-                <div className="flex items-center gap-3 px-5 py-3.5 bg-surface-alt/50 border-b border-border">
-                  <span
-                    className={`px-2.5 py-1 rounded-md text-xs font-bold ${
-                      doc.method === "GET"
-                        ? "bg-emerald-500/15 text-emerald-400 border border-emerald-500/25"
-                        : "bg-blue-500/15 text-blue-400 border border-blue-500/25"
-                    }`}
-                  >
-                    {doc.method}
-                  </span>
-                  <code className="text-sm text-text font-mono flex-1 truncate">{doc.endpoint}</code>
-                  <span className="text-xs text-text-light hidden sm:block">{doc.description}</span>
+          {/* 步骤 */}
+          <ol className="space-y-3 mb-6">
+            {[
+              { t: "用上面提示词让 AI 整理", d: "复制提示词 + 你的素材发给 AI，拿到标准 JSON" },
+              { t: "复制 JSON", d: "AI 返回的 JSON 即为接口需要的 model 字段" },
+              { t: "调用录入接口", d: "用下方 curl（或任意 HTTP 客户端）提交" },
+              { t: "验证", d: "调用 GET 查询接口确认已录入成功" },
+            ].map((s, i) => (
+              <li key={i} className="flex gap-4 items-start">
+                <span className="shrink-0 w-7 h-7 rounded-full bg-primary/15 text-primary font-bold text-sm flex items-center justify-center border border-primary/25">
+                  {i + 1}
+                </span>
+                <div>
+                  <p className="font-semibold text-sm text-text">{s.t}</p>
+                  <p className="text-sm text-text-secondary mt-0.5">{s.d}</p>
                 </div>
-                <div className="px-5 py-3 flex items-center justify-between gap-3">
-                  <pre className="text-xs text-text-light font-mono bg-surface-solid rounded-lg px-3 py-2 flex-1 overflow-x-auto whitespace-nowrap">
-                    {doc.curl}
-                  </pre>
-                  <button
-                    type="button"
-                    onClick={() => copyToClipboard(doc.curl, `api-${idx}`)}
-                    className="shrink-0 inline-flex items-center gap-1 rounded-lg border border-border text-xs font-medium px-3 py-2 text-text-secondary hover:text-primary hover:border-primary/40 transition-colors"
-                  >
-                    {copiedId === `api-${idx}` ? "✅" : "复制"}
-                  </button>
-                </div>
-              </div>
+              </li>
             ))}
+          </ol>
+
+          {/* 录入接口示例 */}
+          <div className="rounded-xl border border-border bg-surface-solid overflow-hidden">
+            <div className="flex items-center justify-between px-4 py-2.5 border-b border-border bg-surface-alt/50">
+              <span className="text-xs font-bold text-blue-400">POST /api/platform · 录入模型</span>
+              <button
+                type="button"
+                onClick={() =>
+                  copy(
+                    `curl -X POST "https://www.luliming.xyz/thinkingModel/api/platform" -H "Content-Type: application/json" -d '{"action":"submit","model":{"slug":"demo","title":"示例","category":"decision","icon":"🧠","tags":["标签"],"introduction":"介绍","keyInsight":"洞察","memorySentence":"口诀","usage":{"scenarios":["场景"],"steps":["步骤"],"pitfalls":["误区"],"combineWith":["搭配"]}}}'`
+                  )
+                }
+                className="text-xs px-2.5 py-1 rounded border border-border text-text-secondary hover:text-primary hover:border-primary/40 transition-colors"
+              >
+                复制
+              </button>
+            </div>
+            <pre className="p-4 text-xs text-text-light font-mono overflow-x-auto whitespace-pre">
+{`curl -X POST "https://www.luliming.xyz/thinkingModel/api/platform" \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "action": "submit",
+    "model": {
+      "slug": "first-principles",
+      "title": "第一性原理",
+      "subtitle": "回归本质，从头推导",
+      "category": "cognition",
+      "icon": "🧠",
+      "tags": ["本质思考", "拆解"],
+      "difficulty": 2,
+      "introduction": "把事物拆解到最基本真理，再往上重构。",
+      "keyInsight": "不要类比，要回到第一性原理。",
+      "memorySentence": "问到底，从头算。",
+      "usage": {
+        "scenarios": ["创新决策", "成本分析"],
+        "steps": ["识别假设", "拆解到基本真理", "重新推导"],
+        "pitfalls": ["陷入类比思维"],
+        "combineWith": ["二阶思维"]
+      },
+      "cases": [{ "title": "马斯克火箭", "content": "从原材料成本推导火箭价格。", "type": "business" }]
+    }
+  }'`}
+            </pre>
+          </div>
+
+          {/* 验证接口示例 */}
+          <div className="rounded-xl border border-border bg-surface-solid overflow-hidden mt-4">
+            <div className="flex items-center justify-between px-4 py-2.5 border-b border-border bg-surface-alt/50">
+              <span className="text-xs font-bold text-emerald-400">GET /api/platform · 查询已录入</span>
+              <button
+                type="button"
+                onClick={() => copy(`curl -sS "https://www.luliming.xyz/thinkingModel/api/platform?action=submissions"`)}
+                className="text-xs px-2.5 py-1 rounded border border-border text-text-secondary hover:text-primary hover:border-primary/40 transition-colors"
+              >
+                复制
+              </button>
+            </div>
+            <pre className="p-4 text-xs text-text-light font-mono overflow-x-auto whitespace-pre">
+{`# 查看通过开放平台录入的全部模型
+curl -sS "https://www.luliming.xyz/thinkingModel/api/platform?action=submissions"
+
+# 查询单个模型完整信息
+curl -sS "https://www.luliming.xyz/thinkingModel/api/platform?slug=first-principles"`}
+            </pre>
+          </div>
+
+          {/* 试一下 */}
+          <div className="mt-4">
+            <button
+              type="button"
+              onClick={runDemoSubmit}
+              disabled={submitLoading}
+              className="rounded-xl bg-primary/10 hover:bg-primary/20 border border-primary/25 text-primary text-sm font-medium px-4 py-2.5 transition-colors disabled:opacity-50"
+            >
+              {submitLoading ? "提交中…" : "🧪 试用录入接口（示例：能力圈）"}
+            </button>
+            {submitResult && (
+              <pre className="mt-3 rounded-xl bg-surface-solid border border-border p-4 text-xs text-text-secondary overflow-auto max-h-40">
+                {submitResult}
+              </pre>
+            )}
           </div>
         </section>
 
-        {/* ===== 快速开始 ===== */}
+        {/* 字段说明 */}
         <section>
-          <div className="flex items-center gap-2 mb-6">
-            <span className="text-2xl">⚡</span>
-            <h2 className="text-2xl font-bold text-text">快速开始</h2>
+          <div className="flex items-center gap-2 mb-5">
+            <span className="text-2xl">📋</span>
+            <h2 className="text-2xl font-bold text-text">model 字段说明</h2>
           </div>
-          <div className="rounded-2xl border border-border bg-gradient-to-br from-primary/5 to-secondary/5 p-6 sm:p-8">
-            <ol className="space-y-4 max-w-2xl">
-              {[
-                {
-                  step: 1,
-                  title: "选择提示词模板",
-                  desc: "从上方 AI 提示词中选择一个场景（深度解读 / 决策辅助 / 多模型对比等）",
-                },
-                {
-                  step: 2,
-                  title: "替换占位符",
-                  desc: "将 {model} 替换为想了解的模型名（如「第一性原理」），{problem} 替换为你的实际问题",
-                },
-                {
-                  step: 3,
-                  title: "发送给 AI",
-                  desc: "复制整段提示词，粘贴到 ChatGPT / Claude / DeepSeek / Kimi 等 AI 助手中",
-                },
-                {
-                  step: 4,
-                  title: "获得专业解读",
-                  desc: "AI 会基于思维模型库的结构化知识，为你输出高质量的深度分析",
-                },
-              ].map((item) => (
-                <li key={item.step} className="flex gap-4">
-                  <span className="shrink-0 w-8 h-8 rounded-full bg-primary/15 text-primary font-bold text-sm flex items-center justify-center border border-primary/25">
-                    {item.step}
-                  </span>
-                  <div>
-                    <p className="font-semibold text-sm text-text">{item.title}</p>
-                    <p className="text-sm text-text-secondary mt-0.5">{item.desc}</p>
-                  </div>
-                </li>
-              ))}
-            </ol>
+          <div className="overflow-hidden rounded-xl border border-border">
+            <table className="w-full text-sm">
+              <thead className="bg-surface-alt/50 text-text-secondary">
+                <tr>
+                  <th className="text-left px-4 py-2.5 font-semibold">字段</th>
+                  <th className="text-left px-4 py-2.5 font-semibold">类型</th>
+                  <th className="text-left px-4 py-2.5 font-semibold">必填</th>
+                  <th className="text-left px-4 py-2.5 font-semibold">说明</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border">
+                {[
+                  ["slug", "string", "✅", "唯一标识（英文小写短横线）"],
+                  ["title", "string", "✅", "模型中文名"],
+                  ["category", "string", "✅", "分类 id（10 选 1）"],
+                  ["icon", "string", "—", "emoji 图标"],
+                  ["subtitle", "string", "—", "副标题"],
+                  ["tags", "string[]", "—", "标签数组"],
+                  ["difficulty", "number", "—", "难度 1-3"],
+                  ["introduction", "string", "—", "通俗介绍"],
+                  ["keyInsight", "string", "—", "关键洞察"],
+                  ["memorySentence", "string", "—", "记忆口诀"],
+                  ["usage", "object", "—", "scenarios/steps/pitfalls/combineWith"],
+                  ["cases", "object[]", "—", "title/content/type"],
+                ].map((r) => (
+                  <tr key={r[0]} className="text-text-secondary">
+                    <td className="px-4 py-2.5 font-mono text-primary">{r[0]}</td>
+                    <td className="px-4 py-2.5 font-mono text-text-light">{r[1]}</td>
+                    <td className="px-4 py-2.5">{r[2]}</td>
+                    <td className="px-4 py-2.5">{r[3]}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         </section>
       </main>
