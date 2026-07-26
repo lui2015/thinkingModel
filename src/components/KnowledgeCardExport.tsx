@@ -6,6 +6,7 @@ import {
   difficultyStars,
   type MentalModel,
 } from "@/lib/models-data";
+import { getModelHook } from "@/lib/model-hooks";
 
 interface KnowledgeCardExportProps {
   model: MentalModel;
@@ -44,6 +45,7 @@ export default function KnowledgeCardExport({
   const [busy, setBusy] = useState(false);
   const cardRefs = useRef<(HTMLDivElement | null)[]>([]);
 
+  const hook = getModelHook(model.slug, model.hook);
   const accent = mixWithWhite(categoryColor, 0.22);
   const deep = mixWithBlack(categoryColor, 0.42);
   const gradient = `linear-gradient(155deg, ${deep} 0%, #0B0B1A 68%)`;
@@ -136,9 +138,18 @@ export default function KnowledgeCardExport({
       body = (
         <div className="flex-1 flex flex-col">
           <Header num={1} cn="模型名称" en="THE MODEL" />
+          <div
+            className="rounded-2xl p-4 mb-3 flex items-start gap-2.5"
+            style={{ background: `linear-gradient(135deg, ${categoryColor}cc, ${deep})`, boxShadow: `inset 0 1px 0 rgba(255,255,255,0.25)` }}
+          >
+            <span className="text-2xl leading-none shrink-0">🤔</span>
+            <p className="text-white font-bold text-[15px] leading-snug">
+              {hook}
+            </p>
+          </div>
           <div className="flex-1 flex flex-col items-center justify-center text-center px-1">
             <div
-              className="w-28 h-28 rounded-[28px] flex items-center justify-center text-6xl mb-6 shadow-2xl"
+              className="w-24 h-24 rounded-[26px] flex items-center justify-center text-5xl mb-5 shadow-2xl"
               style={{
                 background:
                   "linear-gradient(145deg, rgba(255,255,255,0.22), rgba(255,255,255,0.06))",
@@ -299,91 +310,100 @@ export default function KnowledgeCardExport({
       );
     } else if (i === 3) {
       // 第 4 张：实操步骤
-      const steps = model.usage.steps.slice(0, 3);
+      const steps = model.usage.steps;
+      const combine = model.usage.combineWith.slice(0, 2);
       body = (
         <div className="flex-1 flex flex-col">
           <Header num={4} cn="实操步骤" en="HOW TO USE" />
-          <div className="flex-1 flex flex-col justify-center gap-4">
+          <p className="text-white/65 text-[12px] mb-3">
+            跟着 {steps.length} 步，把模型真正用起来 👇
+          </p>
+          <div className="flex-1 flex flex-col justify-center gap-2.5 min-h-0">
             {steps.map((s, idx) => (
-              <div key={idx} className="flex items-start gap-3.5">
-                <div className="flex flex-col items-center">
-                  <span
-                    className="shrink-0 w-9 h-9 rounded-full flex items-center justify-center text-[15px] font-black text-white"
-                    style={{
-                      background: categoryColor,
-                      boxShadow: `0 6px 16px -6px ${categoryColor}`,
-                    }}
-                  >
-                    {idx + 1}
-                  </span>
-                  {idx < steps.length - 1 && (
-                    <span
-                      className="w-px flex-1 mt-1"
-                      style={{ background: "rgba(255,255,255,0.18)", minHeight: 14 }}
-                    />
-                  )}
-                </div>
-                <p className="text-white/90 text-[16px] leading-snug pt-1.5 flex-1">
+              <div
+                key={idx}
+                className="flex items-center gap-3 rounded-xl px-3 py-2.5"
+                style={{ background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.1)" }}
+              >
+                <span
+                  className="shrink-0 w-7 h-7 rounded-full flex items-center justify-center text-[14px] font-black text-white"
+                  style={{ background: categoryColor, boxShadow: `0 4px 12px -4px ${categoryColor}` }}
+                >
+                  {idx + 1}
+                </span>
+                <p className="text-white/90 text-[14px] leading-snug flex-1">
                   {s}
                 </p>
               </div>
             ))}
           </div>
+          {combine.length > 0 && (
+            <div className="mt-3 flex items-center gap-2 text-[12px] text-white/70 flex-wrap">
+              <span className="shrink-0">🤝 常搭配</span>
+              {combine.map((c) => (
+                <span
+                  key={c}
+                  className="px-2 py-0.5 rounded-full"
+                  style={{ background: "rgba(255,255,255,0.12)" }}
+                >
+                  {c}
+                </span>
+              ))}
+            </div>
+          )}
           {footer}
         </div>
       );
     } else {
       // 第 5 张：总结（金句 + 场景 / 避坑）
-      const pitfall = model.usage.pitfalls[0];
-      const scenario = model.usage.scenarios[0];
+      const scenarios = model.usage.scenarios;
+      const pitfalls = model.usage.pitfalls;
       body = (
         <div className="flex-1 flex flex-col">
           <Header num={5} cn="一句话总结" en="IN A NUTSHELL" />
           <div
-            className="rounded-2xl p-6 mb-3 flex items-center justify-center text-center"
+            className="rounded-2xl p-5 mb-3 flex items-center justify-center text-center"
             style={{
               background: `linear-gradient(135deg, ${categoryColor}cc, ${deep})`,
               boxShadow: `inset 0 1px 0 rgba(255,255,255,0.25)`,
             }}
           >
             <p
-              className="text-[26px] font-black leading-[1.45] text-white"
+              className="text-[21px] font-black leading-[1.45] text-white"
               style={{ textShadow: "0 2px 10px rgba(0,0,0,0.3)" }}
             >
               “{model.memorySentence}”
             </p>
           </div>
-          <div className="grid grid-cols-1 gap-2.5">
-            {scenario && (
-              <div
-                className="rounded-xl px-4 py-2.5 flex items-start gap-2"
-                style={{
-                  background: "rgba(255,255,255,0.07)",
-                  border: "1px solid rgba(255,255,255,0.1)",
-                }}
-              >
-                <span className="text-[14px]">📌</span>
-                <span className="text-white/85 text-[13px] leading-snug">
-                  <b className="text-white/95">场景：</b>
-                  {scenario}
-                </span>
-              </div>
-            )}
-            {pitfall && (
-              <div
-                className="rounded-xl px-4 py-2.5 flex items-start gap-2"
-                style={{
-                  background: "rgba(255,255,255,0.07)",
-                  border: "1px solid rgba(255,255,255,0.1)",
-                }}
-              >
-                <span className="text-[14px]">⚡</span>
-                <span className="text-white/85 text-[13px] leading-snug">
-                  <b className="text-white/95">避坑：</b>
-                  {pitfall}
-                </span>
-              </div>
-            )}
+          <div className="flex-1 flex flex-col gap-2.5 min-h-0">
+            <div
+              className="rounded-xl px-4 py-2.5"
+              style={{ background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.1)" }}
+            >
+              <p className="text-white/90 text-[12px] font-semibold mb-1.5">📌 适用场景</p>
+              <ul className="space-y-1">
+                {scenarios.map((s, idx) => (
+                  <li key={idx} className="text-white/85 text-[12.5px] leading-snug flex gap-1.5">
+                    <span className="text-white/50 shrink-0">•</span>
+                    <span>{s}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+            <div
+              className="rounded-xl px-4 py-2.5"
+              style={{ background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.1)" }}
+            >
+              <p className="text-white/90 text-[12px] font-semibold mb-1.5">⚡ 常见误区</p>
+              <ul className="space-y-1">
+                {pitfalls.map((p, idx) => (
+                  <li key={idx} className="text-white/85 text-[12.5px] leading-snug flex gap-1.5">
+                    <span className="text-white/50 shrink-0">•</span>
+                    <span>{p}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
           </div>
           {footer}
         </div>

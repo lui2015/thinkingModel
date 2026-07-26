@@ -29,6 +29,7 @@ export interface MentalModel {
   relatedModels: string[];
   featured?: boolean;
   story?: string;
+  hook?: string;
   updatedAt: string;
 }
 
