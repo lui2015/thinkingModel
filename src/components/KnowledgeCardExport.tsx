@@ -192,92 +192,106 @@ export default function KnowledgeCardExport({
         </div>
       );
     } else if (i === 1) {
-      // 第 2 张：模型图解（中心 + 要素卫星节点关系图）
-      const nodes = model.tags.slice(0, 3);
+      // 第 2 张：模型图解（中心模型 + 环绕要素节点 + 关键要素）
+      const nodes = model.tags.slice(0, 5);
+      const N = nodes.length;
       const cx = 152;
-      const cy = 132;
-      const center = { x: cx, y: cy };
-      const positions = [
-        { x: 152, y: 34 }, // 上
-        { x: 44, y: 214 }, // 左下
-        { x: 260, y: 214 }, // 右下
-      ];
+      const cy = 150;
+      const R = N <= 3 ? 104 : 110;
+      const positions = nodes.map((_, idx) => {
+        const ang = ((-90 + idx * (360 / N)) * Math.PI) / 180;
+        return { x: cx + R * Math.cos(ang), y: cy + R * Math.sin(ang) };
+      });
       body = (
         <div className="flex-1 flex flex-col">
           <Header num={2} cn="模型图解" en="VISUAL MAP" />
-          <div className="flex-1 flex flex-col">
-            <div
-              className="relative mx-auto"
-              style={{ width: 304, height: 256 }}
-            >
-              <svg
-                width="304"
-                height="256"
-                viewBox="0 0 304 256"
-                className="absolute inset-0"
-              >
-                {positions.map((p, idx) => (
-                  <line
-                    key={idx}
-                    x1={center.x}
-                    y1={center.y}
-                    x2={p.x}
-                    y2={p.y}
-                    stroke={accent}
-                    strokeWidth={1.5}
-                    strokeOpacity={0.55}
-                  />
-                ))}
-                <circle cx={center.x} cy={center.y} r={50} fill={categoryColor} fillOpacity={0.18} />
-              </svg>
+          <div
+            className="relative mx-auto"
+            style={{ width: 304, height: 300 }}
+          >
+            <svg width="304" height="300" viewBox="0 0 304 300" className="absolute inset-0">
+              <circle cx={cx} cy={cy} r={R + 14} fill="none" stroke={accent} strokeOpacity={0.25} strokeWidth={1} strokeDasharray="3 4" />
+              {positions.map((p, idx) => (
+                <line
+                  key={idx}
+                  x1={cx}
+                  y1={cy}
+                  x2={p.x}
+                  y2={p.y}
+                  stroke={accent}
+                  strokeWidth={1.5}
+                  strokeOpacity={0.6}
+                />
+              ))}
+              <circle cx={cx} cy={cy} r={52} fill={categoryColor} fillOpacity={0.16} />
+            </svg>
 
-              {/* 中心节点 */}
+            {/* 中心节点 */}
+            <div
+              className="absolute flex flex-col items-center justify-center text-center"
+              style={{
+                left: cx - 50,
+                top: cy - 50,
+                width: 100,
+                height: 100,
+                borderRadius: 9999,
+                background: `linear-gradient(145deg, ${categoryColor}, ${deep})`,
+                boxShadow: `0 16px 38px -10px ${categoryColor}, inset 0 1px 0 rgba(255,255,255,0.3)`,
+              }}
+            >
+              <span className="text-[34px] leading-none">{model.icon}</span>
+              <span className="text-[11px] font-bold text-white mt-1 px-1 leading-tight">
+                {model.title.length > 6 ? model.title.slice(0, 6) + "…" : model.title}
+              </span>
+            </div>
+
+            {/* 环绕要素节点 */}
+            {positions.map((p, idx) => (
               <div
-                className="absolute flex flex-col items-center justify-center text-center"
+                key={idx}
+                className="absolute flex items-center justify-center text-center px-2"
                 style={{
-                  left: cx - 48,
-                  top: cy - 48,
+                  left: p.x - 48,
+                  top: p.y - 22,
                   width: 96,
-                  height: 96,
-                  borderRadius: 9999,
-                  background: `linear-gradient(145deg, ${categoryColor}, ${deep})`,
-                  boxShadow: `0 14px 34px -10px ${categoryColor}, inset 0 1px 0 rgba(255,255,255,0.3)`,
+                  height: 44,
+                  borderRadius: 14,
+                  background: "rgba(255,255,255,0.09)",
+                  border: "1px solid rgba(255,255,255,0.16)",
+                  color: "#fff",
+                  fontSize: 12.5,
+                  fontWeight: 600,
+                  lineHeight: 1.2,
+                  boxShadow: "0 6px 16px -8px rgba(0,0,0,0.6)",
                 }}
               >
-                <span className="text-3xl leading-none">{model.icon}</span>
-                <span className="text-[11px] font-bold text-white mt-1 px-1 leading-tight">
-                  {model.title.length > 6
-                    ? model.title.slice(0, 6) + "…"
-                    : model.title}
-                </span>
+                {nodes[idx]}
               </div>
+            ))}
+          </div>
 
-              {/* 卫星节点 */}
-              {positions.map((p, idx) => (
-                <div
-                  key={idx}
-                  className="absolute flex items-center justify-center text-center px-2"
-                  style={{
-                    left: p.x - 50,
-                    top: p.y - 26,
-                    width: 100,
-                    height: 52,
-                    borderRadius: 16,
-                    background: "rgba(255,255,255,0.09)",
-                    border: "1px solid rgba(255,255,255,0.16)",
-                    color: "#fff",
-                    fontSize: 13,
-                    fontWeight: 600,
-                    lineHeight: 1.25,
-                  }}
-                >
-                  {nodes[idx] ?? "要素"}
-                </div>
-              ))}
-            </div>
-            <p className="text-white/70 text-[12.5px] leading-relaxed px-2 mt-3 text-center">
+          {/* 核心洞察条 */}
+          <div
+            className="rounded-xl px-4 py-2.5 mt-2 flex items-center justify-center text-center"
+            style={{ background: `linear-gradient(135deg, ${categoryColor}bb, ${deep})`, boxShadow: "inset 0 1px 0 rgba(255,255,255,0.25)" }}
+          >
+            <p className="text-white font-bold text-[13.5px] leading-snug">
               {model.keyInsight}
             </p>
+          </div>
+
+          {/* 关键要素标签行 */}
+          <div className="mt-2.5 flex items-center gap-1.5 flex-wrap">
+            <span className="text-[11px] text-white/55 shrink-0">🧩 关键要素</span>
+            {model.tags.slice(0, 5).map((t) => (
+              <span
+                key={t}
+                className="text-[11px] px-2 py-0.5 rounded-full"
+                style={{ background: "rgba(255,255,255,0.12)", color: "#fff" }}
+              >
+                #{t}
+              </span>
+            ))}
           </div>
           {footer}
         </div>
