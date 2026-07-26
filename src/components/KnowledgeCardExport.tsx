@@ -34,8 +34,6 @@ function mixWithWhite(hex: string, ratio = 0.4): string {
   return `rgb(${mix(r)}, ${mix(g)}, ${mix(b)})`;
 }
 
-const WATERMARK = "www.luliming.xyz/thinkingModel";
-
 export default function KnowledgeCardExport({
   model,
   categoryColor,
@@ -102,11 +100,8 @@ export default function KnowledgeCardExport({
   );
 
   const footer = (
-    <div className="mt-auto pt-4 flex items-center justify-between text-white/55 text-[10px]">
-      <span className="truncate max-w-[200px]">
-        {categoryName} · {model.title}
-      </span>
-      <span className="font-mono shrink-0">{WATERMARK}</span>
+    <div className="mt-auto pt-4 flex items-center text-white/45 text-[10px]">
+      <span className="font-mono">{categoryName} · {model.title}</span>
     </div>
   );
 
@@ -286,22 +281,66 @@ export default function KnowledgeCardExport({
         </div>
       );
     } else if (i === 2) {
-      // 第 3 张：模型解读（核心洞察）
+      // 第 3 张：模型解读（图形配套：应用路径图 + 核心洞察）
+      const scenario = model.usage.scenarios[0] ?? "复杂问题";
+      const conclusion = model.memorySentence || model.keyInsight;
+      const trunc = (s: string, n: number) =>
+        s.length > n ? s.slice(0, n) + "…" : s;
       body = (
         <div className="flex-1 flex flex-col">
           <Header num={3} cn="模型解读" en="THE INSIGHT" />
-          <div className="flex-1 flex flex-col">
-            <Glass className="flex-1 p-6 flex items-center justify-center text-center">
+          <div className="flex-1 flex flex-col gap-3 min-h-0">
+            {/* 应用路径图：情境 → 模型 → 结论 */}
+            <div className="flex items-stretch gap-1.5">
+              <div
+                className="flex-1 rounded-xl px-2.5 py-2.5 flex flex-col justify-center text-center"
+                style={{ background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.1)" }}
+              >
+                <span className="text-[10px] text-white/45 mb-1">📥 遇上</span>
+                <span className="text-white/85 text-[11.5px] leading-snug">
+                  {trunc(scenario, 18)}
+                </span>
+              </div>
+              <span className="self-center text-white/40 text-lg shrink-0">→</span>
+              <div
+                className="rounded-xl px-3 py-2.5 flex flex-col items-center justify-center text-center shrink-0"
+                style={{
+                  background: `linear-gradient(145deg, ${categoryColor}, ${deep})`,
+                  boxShadow: `0 8px 20px -8px ${categoryColor}, inset 0 1px 0 rgba(255,255,255,0.3)`,
+                  minWidth: 76,
+                }}
+              >
+                <span className="text-2xl leading-none">{model.icon}</span>
+                <span className="text-white text-[10.5px] font-bold mt-1 leading-tight">
+                  {trunc(model.title, 7)}
+                </span>
+              </div>
+              <span className="self-center text-white/40 text-lg shrink-0">→</span>
+              <div
+                className="flex-1 rounded-xl px-2.5 py-2.5 flex flex-col justify-center text-center"
+                style={{ background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.1)" }}
+              >
+                <span className="text-[10px] text-white/45 mb-1">💡 得到</span>
+                <span className="text-white/85 text-[11.5px] leading-snug">
+                  {trunc(conclusion, 18)}
+                </span>
+              </div>
+            </div>
+
+            {/* 核心洞察 */}
+            <Glass className="flex-1 p-5 flex items-center justify-center text-center">
               <p
-                className="text-[22px] font-bold leading-[1.6] text-white"
+                className="text-[17px] font-bold leading-[1.55] text-white"
                 style={{ textShadow: "0 1px 6px rgba(0,0,0,0.25)" }}
               >
                 {model.keyInsight}
               </p>
             </Glass>
-            <p className="text-white/60 text-[12px] leading-relaxed mt-3 px-1">
-              {model.introduction.length > 80
-                ? model.introduction.slice(0, 80) + "…"
+
+            {/* 解读文字 */}
+            <p className="text-white/60 text-[11.5px] leading-relaxed px-1">
+              {model.introduction.length > 110
+                ? model.introduction.slice(0, 110) + "…"
                 : model.introduction}
             </p>
           </div>
