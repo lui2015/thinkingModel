@@ -6,7 +6,6 @@ import {
   difficultyStars,
   type MentalModel,
 } from "@/lib/models-data";
-import { getModelStory } from "@/lib/model-stories";
 
 interface KnowledgeCardExportProps {
   model: MentalModel;
@@ -24,7 +23,7 @@ function mixWithBlack(hex: string, ratio = 0.5): string {
   return `rgb(${mix(r)}, ${mix(g)}, ${mix(b)})`;
 }
 
-// 颜色调亮，用于浅色高光
+// 颜色调亮，用于浅色高光 / 连线
 function mixWithWhite(hex: string, ratio = 0.4): string {
   const m = hex.replace("#", "");
   const r = parseInt(m.substring(0, 2), 16);
@@ -45,8 +44,7 @@ export default function KnowledgeCardExport({
   const [busy, setBusy] = useState(false);
   const cardRefs = useRef<(HTMLDivElement | null)[]>([]);
 
-  const story = getModelStory(model.slug, model.story);
-  const accent = mixWithWhite(categoryColor, 0.18);
+  const accent = mixWithWhite(categoryColor, 0.22);
   const deep = mixWithBlack(categoryColor, 0.42);
   const gradient = `linear-gradient(155deg, ${deep} 0%, #0B0B1A 68%)`;
 
@@ -83,15 +81,12 @@ export default function KnowledgeCardExport({
     background: gradient,
   };
 
-  // 顶部 eyebrow：序号 + 中英文标题
+  // 顶部 eyebrow：序号 + 中文 + 英文
   const Header = ({ num, cn, en }: { num: number; cn: string; en: string }) => (
-    <div className="flex items-center justify-between mb-5">
+    <div className="flex items-center justify-between mb-4">
       <div className="flex items-center gap-2">
-        <span
-          className="w-7 h-px"
-          style={{ background: accent }}
-        />
-        <span className="text-[12px] font-bold tracking-wide text-white">
+        <span className="w-7 h-px" style={{ background: accent }} />
+        <span className="text-[13px] font-bold tracking-wide text-white">
           {cn}
         </span>
         <span className="text-[9px] uppercase tracking-[0.2em] text-white/45">
@@ -113,6 +108,22 @@ export default function KnowledgeCardExport({
     </div>
   );
 
+  // 通用玻璃内容层
+  const Glass: React.FC<React.PropsWithChildren<{ className?: string }>> = ({
+    children,
+    className = "",
+  }) => (
+    <div
+      className={`rounded-2xl ${className}`}
+      style={{
+        background: "rgba(255,255,255,0.07)",
+        border: "1px solid rgba(255,255,255,0.12)",
+      }}
+    >
+      {children}
+    </div>
+  );
+
   const renderCard = (i: number) => {
     const setRef = (el: HTMLDivElement | null) => {
       cardRefs.current[i] = el;
@@ -121,15 +132,16 @@ export default function KnowledgeCardExport({
     let body: React.ReactNode = null;
 
     if (i === 0) {
-      // 封面
+      // 第 1 张：模型名称（封面）
       body = (
         <div className="flex-1 flex flex-col">
-          <Header num={1} cn="思维模型" en="MENTAL MODEL" />
+          <Header num={1} cn="模型名称" en="THE MODEL" />
           <div className="flex-1 flex flex-col items-center justify-center text-center px-1">
             <div
               className="w-28 h-28 rounded-[28px] flex items-center justify-center text-6xl mb-6 shadow-2xl"
               style={{
-                background: "linear-gradient(145deg, rgba(255,255,255,0.22), rgba(255,255,255,0.06))",
+                background:
+                  "linear-gradient(145deg, rgba(255,255,255,0.22), rgba(255,255,255,0.06))",
                 boxShadow: `0 18px 40px -12px ${categoryColor}88, inset 0 1px 0 rgba(255,255,255,0.35)`,
               }}
             >
@@ -172,75 +184,135 @@ export default function KnowledgeCardExport({
         </div>
       );
     } else if (i === 1) {
-      // 小故事
-      const storyText = story || model.keyInsight;
+      // 第 2 张：模型图解（中心 + 要素卫星节点关系图）
+      const nodes = model.tags.slice(0, 3);
+      const cx = 152;
+      const cy = 132;
+      const center = { x: cx, y: cy };
+      const positions = [
+        { x: 152, y: 34 }, // 上
+        { x: 44, y: 214 }, // 左下
+        { x: 260, y: 214 }, // 右下
+      ];
       body = (
         <div className="flex-1 flex flex-col">
-          <Header num={2} cn="一个真实场景" en="THE STORY" />
-          <div
-            className="flex-1 relative rounded-2xl p-5 overflow-hidden flex flex-col"
-            style={{
-              background: "rgba(255,255,255,0.07)",
-              border: "1px solid rgba(255,255,255,0.12)",
-            }}
-          >
+          <Header num={2} cn="模型图解" en="VISUAL MAP" />
+          <div className="flex-1 flex flex-col">
             <div
-              className="absolute -left-2 -top-7 select-none font-serif leading-none text-[120px] pointer-events-none"
-              style={{ color: `${accent}`, opacity: 0.5 }}
+              className="relative mx-auto"
+              style={{ width: 304, height: 256 }}
             >
-              &ldquo;
+              <svg
+                width="304"
+                height="256"
+                viewBox="0 0 304 256"
+                className="absolute inset-0"
+              >
+                {positions.map((p, idx) => (
+                  <line
+                    key={idx}
+                    x1={center.x}
+                    y1={center.y}
+                    x2={p.x}
+                    y2={p.y}
+                    stroke={accent}
+                    strokeWidth={1.5}
+                    strokeOpacity={0.55}
+                  />
+                ))}
+                <circle cx={center.x} cy={center.y} r={50} fill={categoryColor} fillOpacity={0.18} />
+              </svg>
+
+              {/* 中心节点 */}
+              <div
+                className="absolute flex flex-col items-center justify-center text-center"
+                style={{
+                  left: cx - 48,
+                  top: cy - 48,
+                  width: 96,
+                  height: 96,
+                  borderRadius: 9999,
+                  background: `linear-gradient(145deg, ${categoryColor}, ${deep})`,
+                  boxShadow: `0 14px 34px -10px ${categoryColor}, inset 0 1px 0 rgba(255,255,255,0.3)`,
+                }}
+              >
+                <span className="text-3xl leading-none">{model.icon}</span>
+                <span className="text-[11px] font-bold text-white mt-1 px-1 leading-tight">
+                  {model.title.length > 6
+                    ? model.title.slice(0, 6) + "…"
+                    : model.title}
+                </span>
+              </div>
+
+              {/* 卫星节点 */}
+              {positions.map((p, idx) => (
+                <div
+                  key={idx}
+                  className="absolute flex items-center justify-center text-center px-2"
+                  style={{
+                    left: p.x - 50,
+                    top: p.y - 26,
+                    width: 100,
+                    height: 52,
+                    borderRadius: 16,
+                    background: "rgba(255,255,255,0.09)",
+                    border: "1px solid rgba(255,255,255,0.16)",
+                    color: "#fff",
+                    fontSize: 13,
+                    fontWeight: 600,
+                    lineHeight: 1.25,
+                  }}
+                >
+                  {nodes[idx] ?? "要素"}
+                </div>
+              ))}
             </div>
-            <p className="relative text-white/90 text-[16px] leading-[1.7] flex-1">
-              {storyText}
-            </p>
-            <div
-              className="mt-3 pt-3 flex items-center gap-2 text-[13px]"
-              style={{ borderTop: "1px solid rgba(255,255,255,0.12)" }}
-            >
-              <span style={{ color: accent }}>💡</span>
-              <span className="text-white font-semibold">
-                {model.memorySentence}
-              </span>
-            </div>
-          </div>
-          {footer}
-        </div>
-      );
-    } else if (i === 2) {
-      // 核心洞察
-      body = (
-        <div className="flex-1 flex flex-col">
-          <Header num={3} cn="核心洞察" en="KEY INSIGHT" />
-          <div
-            className="flex-1 rounded-2xl p-6 flex items-center justify-center text-center"
-            style={{
-              background: "rgba(255,255,255,0.07)",
-              border: "1px solid rgba(255,255,255,0.12)",
-            }}
-          >
-            <p
-              className="text-[23px] font-bold leading-[1.55] text-white"
-              style={{ textShadow: "0 1px 6px rgba(0,0,0,0.25)" }}
-            >
+            <p className="text-white/70 text-[12.5px] leading-relaxed px-2 mt-3 text-center">
               {model.keyInsight}
             </p>
           </div>
           {footer}
         </div>
       );
+    } else if (i === 2) {
+      // 第 3 张：模型解读（核心洞察）
+      body = (
+        <div className="flex-1 flex flex-col">
+          <Header num={3} cn="模型解读" en="THE INSIGHT" />
+          <div className="flex-1 flex flex-col">
+            <Glass className="flex-1 p-6 flex items-center justify-center text-center">
+              <p
+                className="text-[22px] font-bold leading-[1.6] text-white"
+                style={{ textShadow: "0 1px 6px rgba(0,0,0,0.25)" }}
+              >
+                {model.keyInsight}
+              </p>
+            </Glass>
+            <p className="text-white/60 text-[12px] leading-relaxed mt-3 px-1">
+              {model.introduction.length > 80
+                ? model.introduction.slice(0, 80) + "…"
+                : model.introduction}
+            </p>
+          </div>
+          {footer}
+        </div>
+      );
     } else if (i === 3) {
-      // 三步上手
+      // 第 4 张：实操步骤
       const steps = model.usage.steps.slice(0, 3);
       body = (
         <div className="flex-1 flex flex-col">
-          <Header num={4} cn="三步上手" en="HOW TO USE" />
+          <Header num={4} cn="实操步骤" en="HOW TO USE" />
           <div className="flex-1 flex flex-col justify-center gap-4">
             {steps.map((s, idx) => (
               <div key={idx} className="flex items-start gap-3.5">
                 <div className="flex flex-col items-center">
                   <span
                     className="shrink-0 w-9 h-9 rounded-full flex items-center justify-center text-[15px] font-black text-white"
-                    style={{ background: categoryColor, boxShadow: `0 6px 16px -6px ${categoryColor}` }}
+                    style={{
+                      background: categoryColor,
+                      boxShadow: `0 6px 16px -6px ${categoryColor}`,
+                    }}
                   >
                     {idx + 1}
                   </span>
@@ -261,12 +333,12 @@ export default function KnowledgeCardExport({
         </div>
       );
     } else {
-      // 金句 + 避坑 & 场景
+      // 第 5 张：总结（金句 + 场景 / 避坑）
       const pitfall = model.usage.pitfalls[0];
       const scenario = model.usage.scenarios[0];
       body = (
         <div className="flex-1 flex flex-col">
-          <Header num={5} cn="一图记住" en="REMEMBER" />
+          <Header num={5} cn="一句话总结" en="IN A NUTSHELL" />
           <div
             className="rounded-2xl p-6 mb-3 flex items-center justify-center text-center"
             style={{
@@ -275,34 +347,40 @@ export default function KnowledgeCardExport({
             }}
           >
             <p
-              className="text-[27px] font-black leading-[1.4] text-white"
+              className="text-[26px] font-black leading-[1.45] text-white"
               style={{ textShadow: "0 2px 10px rgba(0,0,0,0.3)" }}
             >
               “{model.memorySentence}”
             </p>
           </div>
           <div className="grid grid-cols-1 gap-2.5">
-            {pitfall && (
-              <div
-                className="rounded-xl px-4 py-2.5 flex items-start gap-2"
-                style={{ background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.1)" }}
-              >
-                <span className="text-[14px]">⚡</span>
-                <span className="text-white/85 text-[13px] leading-snug">
-                  <b className="text-white/95">避坑：</b>
-                  {pitfall}
-                </span>
-              </div>
-            )}
             {scenario && (
               <div
                 className="rounded-xl px-4 py-2.5 flex items-start gap-2"
-                style={{ background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.1)" }}
+                style={{
+                  background: "rgba(255,255,255,0.07)",
+                  border: "1px solid rgba(255,255,255,0.1)",
+                }}
               >
                 <span className="text-[14px]">📌</span>
                 <span className="text-white/85 text-[13px] leading-snug">
                   <b className="text-white/95">场景：</b>
                   {scenario}
+                </span>
+              </div>
+            )}
+            {pitfall && (
+              <div
+                className="rounded-xl px-4 py-2.5 flex items-start gap-2"
+                style={{
+                  background: "rgba(255,255,255,0.07)",
+                  border: "1px solid rgba(255,255,255,0.1)",
+                }}
+              >
+                <span className="text-[14px]">⚡</span>
+                <span className="text-white/85 text-[13px] leading-snug">
+                  <b className="text-white/95">避坑：</b>
+                  {pitfall}
                 </span>
               </div>
             )}
@@ -327,10 +405,7 @@ export default function KnowledgeCardExport({
           className="pointer-events-none absolute -left-24 -bottom-28 w-60 h-60 rounded-full blur-3xl"
           style={{ background: `radial-gradient(circle, ${accent}33 0%, transparent 70%)` }}
         />
-        {/* 角标小图标 */}
-        <div
-          className="pointer-events-none absolute right-6 bottom-6 text-[60px] opacity-[0.06] select-none"
-        >
+        <div className="pointer-events-none absolute right-6 bottom-6 text-[60px] opacity-[0.06] select-none">
           {model.icon}
         </div>
         <div className="relative flex-1 flex flex-col">{body}</div>
