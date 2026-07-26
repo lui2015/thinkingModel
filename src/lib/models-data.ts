@@ -28,6 +28,7 @@ export interface MentalModel {
   furtherReading: string[];
   relatedModels: string[];
   featured?: boolean;
+  story?: string;
   updatedAt: string;
 }
 

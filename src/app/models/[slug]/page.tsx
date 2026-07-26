@@ -9,6 +9,8 @@ import {
   difficultyLabels,
   difficultyStars,
 } from "@/lib/models-data";
+import { getModelStory } from "@/lib/model-stories";
+import KnowledgeCardExport from "@/components/KnowledgeCardExport";
 
 interface Props {
   params: Promise<{ slug: string }>;
@@ -35,11 +37,13 @@ export default async function ModelDetailPage({ params }: Props) {
 
   const category = getCategoryById(model.category);
   const related = getRelatedModels(model.relatedModels);
+  const story = getModelStory(model.slug, model.story);
 
   const caseTypeLabels = { life: "生活场景", business: "商业/历史案例", negative: "反面案例" };
 
   const sections = [
     { id: "intro", label: "通俗介绍" },
+    { id: "story", label: "小故事" },
     { id: "insight", label: "关键洞察" },
     { id: "cases", label: "案例" },
     { id: "usage", label: "使用指引" },
@@ -112,6 +116,16 @@ export default async function ModelDetailPage({ params }: Props) {
                 </span>
               ))}
             </div>
+
+            {story && (
+              <div className="mt-5">
+                <KnowledgeCardExport
+                  model={model}
+                  categoryColor={category?.color ?? "#6C5CE7"}
+                  categoryName={category?.name ?? ""}
+                />
+              </div>
+            )}
           </header>
 
           {/* Introduction */}
@@ -123,6 +137,20 @@ export default async function ModelDetailPage({ params }: Props) {
               <p className="text-text leading-relaxed whitespace-pre-line">{model.introduction}</p>
             </div>
           </section>
+
+          {story && (
+            <section id="story" className="mb-10 scroll-mt-24">
+              <h2 className="text-xl font-bold text-text mb-4 flex items-center gap-2">
+                <span>📖</span> 小故事
+              </h2>
+              <div className="relative bg-card rounded-xl border border-border p-6 overflow-hidden">
+                <div className="absolute -left-1 -top-6 text-[110px] leading-none text-primary/10 select-none font-serif pointer-events-none">
+                  &ldquo;
+                </div>
+                <p className="relative text-text leading-relaxed whitespace-pre-line">{story}</p>
+              </div>
+            </section>
+          )}
 
           {/* Key Insight */}
           <section id="insight" className="mb-10 scroll-mt-24">
