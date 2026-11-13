@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState, useEffect, useCallback, useRef } from "react";
 
 // 与 next.config.ts 的 basePath 对应，保证子路径部署时接口地址正确
@@ -172,10 +173,61 @@ export default function PlatformPage() {
               <p className="text-2xl font-black text-secondary">{stats?.total ?? "—"}</p>
             </div>
           </div>
+
+          <div className="mt-6 flex flex-wrap items-center gap-3">
+            <Link
+              href="/platform/docs"
+              className="inline-flex items-center gap-2 rounded-xl bg-primary text-white text-sm font-semibold px-4 py-2.5 hover:bg-primary-dark transition-colors"
+            >
+              📖 查看对外数据接口文档 →
+            </Link>
+            <span className="text-xs text-text-light">GET /api/v1/models · 免鉴权 · 支持跨域</span>
+          </div>
         </div>
       </section>
 
       <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12 space-y-12">
+        {/* 对外数据接口 */}
+        <section>
+          <div className="flex items-center gap-2 mb-5">
+            <span className="text-2xl">🔌</span>
+            <h2 className="text-2xl font-bold text-text">对外数据接口（v1）</h2>
+          </div>
+          <div className="rounded-2xl border border-border bg-card p-5 sm:p-6">
+            <p className="text-sm text-text-secondary leading-relaxed">
+              外部系统可直接调用只读接口获取模型库数据：免鉴权、支持浏览器跨域、统一响应格式，
+              提供分页、分类筛选、关键词搜索与完整模型解读。
+            </p>
+            <div className="grid gap-2 sm:grid-cols-2 mt-4">
+              {[
+                { m: "GET", p: "/api/v1/models", d: "分页查询 · 支持分类 / 关键词 / 难度筛选" },
+                { m: "GET", p: "/api/v1/models/{slug}", d: "单个模型的完整解读信息" },
+                { m: "GET", p: "/api/v1/categories", d: "10 大分类及各分类模型数量" },
+                { m: "GET", p: "/api/v1/stats", d: "模型库总数与分布统计" },
+              ].map((e) => (
+                <div key={e.p} className="rounded-lg bg-surface-alt/60 border border-border px-3 py-2.5">
+                  <p className="font-mono text-xs text-primary">{e.m} {e.p}</p>
+                  <p className="text-xs text-text-light mt-1">{e.d}</p>
+                </div>
+              ))}
+            </div>
+            <div className="mt-5 flex flex-wrap items-center gap-3">
+              <Link
+                href="/platform/docs"
+                className="rounded-xl bg-primary/12 hover:bg-primary/20 border border-primary/30 text-primary text-sm font-semibold px-4 py-2.5 transition-colors"
+              >
+                阅读完整接口文档 →
+              </Link>
+              <a
+                href="/thinkingModel/api/v1/openapi.json"
+                className="text-sm text-text-light hover:text-primary transition-colors"
+              >
+                OpenAPI 3.1 规格
+              </a>
+            </div>
+          </div>
+        </section>
+
         {/* 核心提示词 */}
         <section>
           <div className="flex items-center gap-2 mb-5">
