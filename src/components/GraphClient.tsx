@@ -13,28 +13,19 @@ const MODEL_H = 40;     // 模型节点行高
 const PAD_TOP = 40;
 const CANVAS_W = 1180;
 
-type FullscreenCapableElement = HTMLElement & {
-  webkitRequestFullscreen?: () => Promise<void> | void;
-};
-type FullscreenCapableDocument = Document & {
-  webkitFullscreenElement?: Element | null;
-  webkitExitFullscreen?: () => Promise<void> | void;
-};
-
-function FullscreenIcon({ exit = false }: { exit?: boolean }) {
+function FullscreenIcon() {
   return (
     <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      {exit ? (
-        <>
-          <path d="M6 1.5V6H1.5" /><path d="M10 1.5V6h4.5" />
-          <path d="M6 14.5V10H1.5" /><path d="M10 14.5V10h4.5" />
-        </>
-      ) : (
-        <>
-          <path d="M1.5 6H6V1.5" /><path d="M14.5 6H10V1.5" />
-          <path d="M1.5 10H6v4.5" /><path d="M14.5 10H10v4.5" />
-        </>
-      )}
+      <path d="M1.5 6H6V1.5" /><path d="M14.5 6H10V1.5" />
+      <path d="M1.5 10H6v4.5" /><path d="M14.5 10H10v4.5" />
+    </svg>
+  );
+}
+
+function CloseIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" aria-hidden="true">
+      <path d="M3.5 3.5l9 9" /><path d="M12.5 3.5l-9 9" />
     </svg>
   );
 }
@@ -75,7 +66,6 @@ export default function GraphClient() {
   const [hovered, setHovered] = useState<string | null>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
-  const frameRef = useRef<HTMLDivElement>(null);
   const didCenterRef = useRef(false);
 
   const modelBySlug = useMemo(() => new Map(models.map((m) => [m.slug, m])), []);
@@ -259,66 +249,24 @@ export default function GraphClient() {
     centerRootRef.current = centerRoot;
   }, [centerRoot]);
 
-  /* ---------- 全屏展示 ---------- */
-  useEffect(() => {
-    const sync = () => {
-      const doc = document as FullscreenCapableDocument;
-      const active = doc.fullscreenElement || doc.webkitFullscreenElement;
-      setIsFullscreen(active === frameRef.current);
-    };
-    document.addEventListener("fullscreenchange", sync);
-    document.addEventListener("webkitfullscreenchange", sync);
-    return () => {
-      document.removeEventListener("fullscreenchange", sync);
-      document.removeEventListener("webkitfullscreenchange", sync);
-    };
-  }, []);
-
+  /* ---------- 沉浸式全屏：只保留画布，不触发浏览器原生全屏提示 ---------- */
   useEffect(() => {
     if (!isFullscreen) return;
     const prevOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     const timer = window.setTimeout(() => centerRootRef.current(), 120);
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setIsFullscreen(false);
+    };
+    window.addEventListener("keydown", onKeyDown);
     return () => {
       document.body.style.overflow = prevOverflow;
       window.clearTimeout(timer);
+      window.removeEventListener("keydown", onKeyDown);
     };
   }, [isFullscreen]);
 
-  useEffect(() => {
-    if (!isFullscreen) return;
-    const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key !== "Escape") return;
-      const doc = document as FullscreenCapableDocument;
-      // 原生全屏交给浏览器退出，fullscreenchange 会同步状态；这里只处理页面内全屏
-      if (!doc.fullscreenElement && !doc.webkitFullscreenElement) setIsFullscreen(false);
-    };
-    window.addEventListener("keydown", onKeyDown);
-    return () => window.removeEventListener("keydown", onKeyDown);
-  }, [isFullscreen]);
-
-  const toggleFullscreen = useCallback(async () => {
-    const el = frameRef.current as FullscreenCapableElement | null;
-    if (!el) return;
-    const doc = document as FullscreenCapableDocument;
-    if (isFullscreen) {
-      if (doc.fullscreenElement || doc.webkitFullscreenElement) {
-        try {
-          if (doc.exitFullscreen) await doc.exitFullscreen();
-          else await doc.webkitExitFullscreen?.();
-        } catch { /* 浏览器拒绝时仍退出页面内全屏 */ }
-      }
-      setIsFullscreen(false);
-      return;
-    }
-    setIsFullscreen(true); // 先铺满视口，原生全屏不可用时它就是兜底方案
-    try {
-      if (!doc.fullscreenElement && !doc.webkitFullscreenElement) {
-        if (el.requestFullscreen) await el.requestFullscreen();
-        else await el.webkitRequestFullscreen?.();
-      }
-    } catch { /* 保持页面内全屏 */ }
-  }, [isFullscreen]);
+  const toggleFullscreen = useCallback(() => setIsFullscreen((v) => !v), []);
 
   /* 首次渲染把根节点定位到可视区中央，避免根节点在长画布中段而首屏看不到 */
   useEffect(() => {
@@ -402,20 +350,11 @@ export default function GraphClient() {
       </div>
 
       <div
-        ref={frameRef}
-        className={isFullscreen ? "fixed inset-0 z-[999] flex flex-col overflow-hidden p-4 sm:p-6" : ""}
+        className={isFullscreen ? "fixed inset-0 z-[999] flex flex-col overflow-hidden" : ""}
         style={isFullscreen ? { background: "var(--color-surface)" } : undefined}
       >
-        {isFullscreen && (
-          <div className="flex items-center justify-between gap-3 mb-4 shrink-0">
-            <div className="flex items-baseline gap-3">
-              <h2 className="text-lg font-bold text-text">🧠 模型脑图</h2>
-              <span className="text-xs text-text-light">{models.length} 模型 · {categories.length} 分类 · {modelClusters.length} 主题簇</span>
-            </div>
-            <span className="text-xs text-text-light hidden sm:block">按 Esc 或点右上角按钮退出全屏</span>
-          </div>
-        )}
-
+        {!isFullscreen && (
+          <>
         {/* 工具栏 */}
         <div className="flex flex-wrap items-center gap-2 mb-4 shrink-0">
           <div className="relative">
@@ -437,11 +376,11 @@ export default function GraphClient() {
           </button>
           <button
             onClick={toggleFullscreen}
-            title={isFullscreen ? "退出全屏（Esc）" : "全屏展示脑图（Esc 退出）"}
+            title="全屏展示脑图（Esc 退出）"
             className="px-3 py-2 rounded-lg text-sm font-medium bg-primary/12 border border-primary/35 text-primary hover:bg-primary/20 transition-colors flex items-center gap-1.5"
           >
-            <FullscreenIcon exit={isFullscreen} />
-            {isFullscreen ? "退出全屏" : "全屏展示"}
+            <FullscreenIcon />
+            全屏展示
           </button>
           <div className="flex items-center gap-2 ml-auto">
             <div className="flex items-center gap-1 rounded-lg bg-card border border-border px-1 py-1">
@@ -471,12 +410,14 @@ export default function GraphClient() {
             </button>
           ))}
         </div>
+          </>
+        )}
 
         {/* 脑图画布 */}
         <div className={`relative ${isFullscreen ? "flex-1 min-h-0" : ""}`} style={isFullscreen ? undefined : { height: "68vh" }}>
           <div
             ref={scrollRef}
-            className="w-full h-full bg-card rounded-2xl border border-border overflow-auto"
+            className={`w-full h-full overflow-auto ${isFullscreen ? "bg-surface" : "bg-card rounded-2xl border border-border"}`}
           >
             <div style={{ width: CANVAS_W * scale, height: canvasH * scale, position: "relative" }}>
           <div
@@ -661,19 +602,21 @@ export default function GraphClient() {
           onClick={toggleFullscreen}
           title={isFullscreen ? "退出全屏（Esc）" : "全屏展示脑图"}
           aria-label={isFullscreen ? "退出全屏" : "全屏展示"}
-          className="absolute right-3 top-2.5 z-20 w-8 h-8 flex items-center justify-center rounded-lg bg-card/95 border border-border text-text-secondary hover:text-primary hover:border-primary/60 transition-colors"
+          className={`absolute right-3 top-2.5 z-20 w-8 h-8 flex items-center justify-center rounded-lg border transition-all ${isFullscreen ? "bg-card/70 border-border text-text-light opacity-40 hover:opacity-100 hover:text-primary" : "bg-card/95 border-border text-text-secondary hover:text-primary hover:border-primary/60"}`}
         >
-          <FullscreenIcon exit={isFullscreen} />
+          {isFullscreen ? <CloseIcon /> : <FullscreenIcon />}
         </button>
       </div>
 
-        {/* 图例 / 使用说明 */}
-        <div className="mt-4 flex flex-wrap items-center gap-x-6 gap-y-2 text-xs text-text-light shrink-0">
-          <span>🖱️ 点<b className="text-text-secondary">分类</b>折叠 · 点<b className="text-text-secondary">主题簇</b>展开模型 · 点<b className="text-text-secondary">模型</b>看详情</span>
-          <span>🔍 搜索会自动展开命中的主题簇</span>
-          <span>💡 每簇下方的短句是用来成组记忆的锚点</span>
-          <span>⛶ 点「全屏展示」铺满屏幕，按 Esc 退出</span>
-        </div>
+        {/* 图例 / 使用说明（全屏时隐藏） */}
+        {!isFullscreen && (
+          <div className="mt-4 flex flex-wrap items-center gap-x-6 gap-y-2 text-xs text-text-light shrink-0">
+            <span>🖱️ 点<b className="text-text-secondary">分类</b>折叠 · 点<b className="text-text-secondary">主题簇</b>展开模型 · 点<b className="text-text-secondary">模型</b>看详情</span>
+            <span>🔍 搜索会自动展开命中的主题簇</span>
+            <span>💡 每簇下方的短句是用来成组记忆的锚点</span>
+            <span>⛶ 点「全屏展示」进入纯净展示，按 Esc 退出</span>
+          </div>
+        )}
       </div>
     </div>
   );
