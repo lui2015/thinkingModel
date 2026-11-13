@@ -11,8 +11,13 @@ RUN npm run build
 FROM node:22-alpine AS runner
 WORKDIR /app
 ENV NODE_ENV=production
+ARG NPM_REGISTRY=https://registry.npmjs.org
 COPY --from=builder /app/.next/standalone ./
 COPY --from=builder /app/.next/static ./.next/static
 COPY --from=builder /app/public ./public
+# exceljs 被标记为 serverExternalPackages，运行时直接从 node_modules 加载；
+# standalone 只带它自身，需补齐完整生产依赖树
+COPY --from=builder /app/package.json /app/package-lock.json ./
+RUN npm ci --omit=dev --registry=$NPM_REGISTRY --include=optional --fetch-retries=5 --fetch-retry-maxtimeout=120000
 EXPOSE 3000
 CMD ["node", "server.js"]
