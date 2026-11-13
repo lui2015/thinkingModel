@@ -1,6 +1,10 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
+
+// 与 next.config.ts 的 basePath 对应，保证子路径部署时接口地址正确
+const API_URL = "/thinkingModel/api/platform";
+const EXCEL_URL = `${API_URL}/excel`;
 
 /* 核心 AI 提示词：让 AI 把模型信息整理成接口可直接提交的 JSON */
 const ENTRY_PROMPT = `你是一位思维模型知识整理专家。请把我要分享的模型，整理成严格符合 JSON 的结构化数据，方便我直接提交到「思维模型库」开放平台的录入接口。
@@ -43,9 +47,12 @@ export default function PlatformPage() {
   const [stats, setStats] = useState<{ total: number; today: number } | null>(null);
   const [submitResult, setSubmitResult] = useState("");
   const [submitLoading, setSubmitLoading] = useState(false);
+  const [importing, setImporting] = useState(false);
+  const [importResult, setImportResult] = useState<{ ok: boolean; text: string } | null>(null);
+  const fileRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    fetch("/api/platform?action=stats")
+    fetch(`${API_URL}?action=stats`)
       .then((r) => r.json())
       .then(setStats)
       .catch(() => {});
@@ -92,7 +99,7 @@ export default function PlatformPage() {
       },
     };
     try {
-      const res = await fetch("/api/platform", {
+      const res = await fetch(API_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(demo),
@@ -102,6 +109,38 @@ export default function PlatformPage() {
       setSubmitResult(`请求失败: ${e}`);
     }
     setSubmitLoading(false);
+  };
+
+  const handleImport = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    setImporting(true);
+    setImportResult(null);
+    const form = new FormData();
+    form.append("file", file);
+    try {
+      const res = await fetch(EXCEL_URL, { method: "POST", body: form });
+      const data = await res.json();
+      if (!res.ok) {
+        setImportResult({ ok: false, text: data.error ?? "导入失败" });
+      } else {
+        const lines = [
+          `导入完成：新增 ${data.imported} 条，更新 ${data.updated} 条，未变更 ${data.unchanged} 行，跳过空行 ${data.skipped} 行。`,
+        ];
+        if (Array.isArray(data.errors) && data.errors.length) {
+          lines.push(`有 ${data.errors.length} 行未通过校验：`);
+          data.errors.slice(0, 5).forEach((e: { row: number; reason: string }) =>
+            lines.push(`  第 ${e.row} 行：${e.reason}`)
+          );
+        }
+        setImportResult({ ok: true, text: lines.join("\n") });
+      }
+    } catch (e) {
+      setImportResult({ ok: false, text: `请求失败：${e}` });
+    } finally {
+      setImporting(false);
+      event.target.value = "";
+    }
   };
 
   return (
@@ -272,6 +311,62 @@ curl -sS "https://www.luliming.xyz/thinkingModel/api/platform?slug=first-princip
                 {submitResult}
               </pre>
             )}
+          </div>
+        </section>
+
+        {/* 导入 / 导出数据 */}
+        <section>
+          <div className="flex items-center gap-2 mb-5">
+            <span className="text-2xl">📊</span>
+            <h2 className="text-2xl font-bold text-text">导入 / 导出数据</h2>
+          </div>
+          <div className="rounded-2xl border border-border bg-card p-5 sm:p-6">
+            <p className="text-sm text-text-secondary leading-relaxed">
+              用 Excel 批量整理模型：先导出当前全部数据（模型库 + 开放平台录入数据）作为模板，
+              在「模型数据」工作表里编辑或新增行，再导入即可一次录入多条；只保留需要改动的行也行，未变更的行会自动跳过。
+              文件里的「字段说明」工作表列出每列的填写规则。
+            </p>
+            <div className="flex flex-wrap items-center gap-3 mt-5">
+              <a
+                href={`${EXCEL_URL}?action=export`}
+                className="inline-flex items-center gap-2 rounded-xl bg-primary/12 hover:bg-primary/20 border border-primary/30 text-primary text-sm font-semibold px-4 py-2.5 transition-colors"
+              >
+                ⬇️ 导出为 Excel
+              </a>
+              <button
+                type="button"
+                onClick={() => fileRef.current?.click()}
+                disabled={importing}
+                className="inline-flex items-center gap-2 rounded-xl bg-card hover:bg-surface-alt border border-border text-text-secondary hover:text-text text-sm font-semibold px-4 py-2.5 transition-colors disabled:opacity-50"
+              >
+                {importing ? "导入中…" : "⬆️ 导入 Excel"}
+              </button>
+              <input
+                ref={fileRef}
+                type="file"
+                accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                className="hidden"
+                onChange={handleImport}
+              />
+              <span className="text-xs text-text-light">支持 .xlsx · 单次最多 1000 行 / 5MB</span>
+            </div>
+            {importResult && (
+              <pre
+                className={`mt-4 rounded-xl border p-4 text-xs whitespace-pre-wrap overflow-auto ${
+                  importResult.ok
+                    ? "border-secondary/30 bg-secondary/5 text-text-secondary"
+                    : "border-primary/30 bg-primary/5 text-primary"
+                }`}
+              >
+                {importResult.text}
+              </pre>
+            )}
+            <div className="mt-5 grid gap-2 text-xs text-text-light sm:grid-cols-2">
+              <p>✅ 必填三列：<b className="text-text-secondary">唯一标识 / 模型名称 / 分类</b></p>
+              <p>🔁 同唯一标识再次导入会覆盖更新</p>
+              <p>📝 标签、步骤等多值列用单元格内换行分隔</p>
+              <p>🧩 案例列填 JSON 数组，字段说明里有示例</p>
+            </div>
           </div>
         </section>
 

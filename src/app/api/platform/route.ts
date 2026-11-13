@@ -1,62 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { models as allModels, getModelBySlug, type MentalModel } from "@/lib/models-data";
-
-// 简易文件计数器（生产环境应换数据库）
-const STATS_FILE = "/tmp/platform-stats.json";
-const SUBMIT_FILE = "/tmp/platform-submissions.json";
-
-function readSubmissions(): any[] {
-  try {
-    const fs = require("fs");
-    if (!fs.existsSync(SUBMIT_FILE)) return [];
-    return JSON.parse(fs.readFileSync(SUBMIT_FILE, "utf-8"));
-  } catch {
-    return [];
-  }
-}
-
-function writeSubmissions(arr: any[]) {
-  try {
-    const fs = require("fs");
-    fs.writeFileSync(SUBMIT_FILE, JSON.stringify(arr, null, 2), "utf-8");
-  } catch {
-    // 静默失败
-  }
-}
-
-function readStats(): { total: number; today: number; date: string } {
-  try {
-    const fs = require("fs");
-    if (!require("fs").existsSync(STATS_FILE)) return { total: 0, today: 0, date: new Date().toISOString().slice(0, 10) };
-    const raw = require("fs").readFileSync(STATS_FILE, "utf-8");
-    return JSON.parse(raw);
-  } catch {
-    return { total: 0, today: 0, date: new Date().toISOString().slice(0, 10) };
-  }
-}
-
-function writeStats(stats: { total: number; today: number; date: string }) {
-  try {
-    const fs = require("fs");
-    require("fs").writeFileSync(STATS_FILE, JSON.stringify(stats), "utf-8");
-  } catch {
-    // 静默失败，不影响主流程
-  }
-}
-
-function bumpCount() {
-  const stats = readStats();
-  const today = new Date().toISOString().slice(0, 10);
-  stats.total += 1;
-  if (stats.date === today) {
-    stats.today += 1;
-  } else {
-    stats.today = 1;
-    stats.date = today;
-  }
-  writeStats(stats);
-  return stats;
-}
+import { readStats, readSubmissions, writeSubmissions, bumpCount } from "@/lib/platform-store";
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
@@ -147,20 +91,21 @@ export async function POST(request: NextRequest) {
 
     if (action === "submit") {
       // 录入模型及相关解读信息（开放平台核心能力）
-      const { model }: { model?: any } = body;
-      if (!model || typeof model !== "object") {
+      const { model }: { model?: unknown } = body;
+      if (!model || typeof model !== "object" || Array.isArray(model)) {
         return NextResponse.json({ error: "缺少 model 对象" }, { status: 400 });
       }
-      if (!model.slug || !model.title || !model.category) {
+      const record = model as Record<string, unknown>;
+      if (!record.slug || !record.title || !record.category) {
         return NextResponse.json(
           { error: "model 缺少必填字段（slug / title / category 为必填）" },
           { status: 400 }
         );
       }
       const arr = readSubmissions();
-      const idx = arr.findIndex((m) => m.slug === model.slug);
-      if (idx >= 0) arr[idx] = model; // 同 slug 覆盖更新
-      else arr.push(model);
+      const idx = arr.findIndex((m) => m.slug === record.slug);
+      if (idx >= 0) arr[idx] = record; // 同 slug 覆盖更新
+      else arr.push(record);
       writeSubmissions(arr);
       const stats = bumpCount();
       return NextResponse.json({
