@@ -622,8 +622,21 @@ import { extendedModels } from "./models-extended-1";
 import { extendedModels2 } from "./models-extended-2";
 import { extendedModels3 } from "./models-extended-3";
 import { extendedModels4 } from "./models-extended-4";
+import { extendedModels5 } from "./models-extended-5";
+import { extendedModels6 } from "./models-extended-6";
+import { extendedModels7 } from "./models-extended-7";
+import { extendedModels8 } from "./models-extended-8";
 
-models.push(...extendedModels, ...extendedModels2, ...extendedModels3, ...extendedModels4);
+models.push(
+  ...extendedModels,
+  ...extendedModels2,
+  ...extendedModels3,
+  ...extendedModels4,
+  ...extendedModels5,
+  ...extendedModels6,
+  ...extendedModels7,
+  ...extendedModels8,
+);
 
 export function getModelBySlug(slug: string): MentalModel | undefined {
   return models.find((m) => m.slug === slug);
