@@ -8,7 +8,7 @@ import ThemeSwitcher from "./ThemeSwitcher";
 const navLinks = [
   { href: "/", label: "首页" },
   { href: "/models", label: "模型库" },
-  { href: "/graph", label: "模型图谱" },
+  { href: "/graph", label: "模型脑图" },
   { href: "/platform", label: "开放平台" },
 ];
 

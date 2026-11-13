@@ -1,8 +1,8 @@
 import GraphClient from "@/components/GraphClient";
 
 export const metadata = {
-  title: "模型图谱",
-  description: "可视化探索思维模型之间的关联关系",
+  title: "模型脑图",
+  description: "按分类、主题簇、模型四层结构化梳理 191 个思维模型，附记忆锚点，方便成组记忆",
 };
 
 export default function GraphPage() {
